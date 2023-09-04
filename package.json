@@ -1,0 +1,57 @@
+{
+  "private": true,
+  "sideEffects": false,
+  "scripts": {
+    "build": "remix build",
+    "dev": "remix dev",
+    "start": "remix-serve build",
+    "typecheck": "tsc",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@remix-run/css-bundle": "^1.19.3",
+    "@remix-run/node": "^1.19.3",
+    "@remix-run/react": "^1.19.3",
+    "@remix-run/serve": "^1.19.3",
+    "front-matter": "^4.0.2",
+    "isbot": "^3.6.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "^1.19.3",
+    "@remix-run/eslint-config": "^1.19.3",
+    "@trivago/prettier-plugin-sort-imports": "4.2.0",
+    "@types/react": "^18.0.35",
+    "@types/react-dom": "^18.0.11",
+    "@types/uuid": "^9.0.3",
+    "eslint": "^8.38.0",
+    "patch-package": "^8.0.0",
+    "prettier": "2.7.1",
+    "prettier-plugin-tailwindcss": "0.3.0",
+    "tailwindcss": "^3.3.3",
+    "typescript": "^5.0.4"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "prettier": {
+    "plugins": [
+      "@trivago/prettier-plugin-sort-imports",
+      "prettier-plugin-tailwindcss"
+    ],
+    "pluginSearchDirs": false,
+    "importOrder": [
+      "<THIRD_PARTY_MODULES>",
+      "^[./]"
+    ],
+    "importOrderSeparation": true,
+    "importOrderSortSpecifiers": true,
+    "semi": false,
+    "singleQuote": true,
+    "jsxSingleQuote": true,
+    "arrowParens": "avoid",
+    "trailingComma": "none"
+  }
+}

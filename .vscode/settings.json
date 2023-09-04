@@ -1,0 +1,16 @@
+{
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "[css][graphql][html][javascript][javascriptreact][json][jsonc][json5][less][markdown][mdx][scss][typescript][vue][yaml][tailwindcss]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "javascript.preferences.importModuleSpecifierEnding": "minimal",
+  "editor.quickSuggestions": {
+    "strings": true
+  }
+}
