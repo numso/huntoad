@@ -1,6 +1,7 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { Form, useLoaderData } from '@remix-run/react'
+import { Form, useActionData, useLoaderData } from '@remix-run/react'
+import * as React from 'react'
 
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
@@ -55,6 +56,11 @@ export async function action ({ context, params, request }: ActionArgs) {
       await db.addItem(id)
       break
     }
+    case 'share': {
+      const id = url.searchParams.get('id')
+      const steris = await db.convertToSteris(id)
+      return json({ steris })
+    }
   }
 
   return null
@@ -62,10 +68,18 @@ export async function action ({ context, params, request }: ActionArgs) {
 
 export default function Index () {
   const { items, breadcrumbs } = useLoaderData<typeof loader>()
+  const actionData = useActionData<typeof action>()
+
+  React.useEffect(() => {
+    if (!actionData?.steris) return
+    navigator.clipboard.writeText(actionData.steris)
+    // send toast
+  }, [actionData?.steris])
+
   return (
     <div>
       {!!breadcrumbs.length && (
-        <ul className='flex p-4'>
+        <ul className='group flex p-4'>
           <li>
             <a className='hover:text-blue-500' href='/list'>
               @
@@ -84,6 +98,17 @@ export default function Index () {
               </li>
             </>
           ))}
+          <li className='ml-10'>
+            <Form method='POST'>
+              <input type='hidden' name='_action' value='share' />
+              <button
+                type='submit'
+                className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
+              >
+                share
+              </button>
+            </Form>
+          </li>
         </ul>
       )}
 

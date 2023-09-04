@@ -46,6 +46,28 @@ export async function addItem (parentId: string | null) {
   await fs.writeFile(`./data/${id}.md`, contents)
 }
 
+export async function convertToSteris (id: string) {
+  const items = await loadItems()
+  function populateChildren (item: Item): void {
+    item.children = items.filter(i => i.parentId == item.id)
+    item.children.map(populateChildren)
+  }
+  const item = items.find(i => i.id == id)
+  if (!item) return ''
+  populateChildren(item)
+  return `
+---
+${item.title}
+---
+${item.children.map(i => toSteris(i, '')).join('\n')}
+  `.trim()
+}
+
+function toSteris (item: Item, indent: string): string {
+  const children = item.children.map(i => toSteris(i, indent + '  '))
+  return [`${indent}> [ ] ${item.title || ''}`, ...children].join('\n')
+}
+
 interface StringMap {
   [key: string]: string | null
 }
