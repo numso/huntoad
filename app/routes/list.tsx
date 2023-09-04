@@ -66,9 +66,23 @@ export async function action ({ context, params, request }: ActionArgs) {
   return null
 }
 
+interface ItemMap {
+  [key: string]: Item
+}
+
+function buildIdMap (items: Item[], obj: ItemMap) {
+  for (let item of items) {
+    obj[item.id] = item
+    buildIdMap(item.children, obj)
+  }
+}
+
 export default function Index () {
   const { items, breadcrumbs } = useLoaderData<typeof loader>()
   const actionData = useActionData<typeof action>()
+
+  const allItems: ItemMap = { ROOT: { children: items } }
+  buildIdMap(items, allItems)
 
   React.useEffect(() => {
     if (!actionData?.steris) return
@@ -112,17 +126,18 @@ export default function Index () {
         </ul>
       )}
 
-      <List items={items} root />
+      <List items={items} allItems={allItems} root />
     </div>
   )
 }
 
 interface ListProps {
   items: Item[]
+  allItems: ItemMap
   root?: boolean
 }
 
-function List ({ items, root }: ListProps) {
+function List ({ items, root, allItems }: ListProps) {
   return (
     <ul>
       {items.map(item => (
@@ -137,10 +152,10 @@ function List ({ items, root }: ListProps) {
             <Form method='POST' className='flex-1'>
               <input type='hidden' name='_action' value='updateTitle' />
               <input type='hidden' name='id' value={item.id} />
-              <ListItem item={item} />
+              <ListItem item={item} allItems={allItems} />
             </Form>
           </div>
-          <List items={item.children} />
+          <List items={item.children} allItems={allItems} />
         </li>
       ))}
       {root && (
@@ -162,9 +177,10 @@ function List ({ items, root }: ListProps) {
 
 interface ListItemProps {
   item: Item
+  allItems: ItemMap
 }
 
-function ListItem ({ item }: ListItemProps) {
+function ListItem ({ item, allItems }: ListItemProps) {
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
     console.log({ key: e.key })
     switch (e.key) {
@@ -185,18 +201,25 @@ function ListItem ({ item }: ListItemProps) {
       }
       case 'ArrowUp': {
         e.preventDefault()
-        // move focus to item above
+        const prevItem = getPrevItem(item, allItems)
+        if (prevItem) {
+          document.getElementById(`item-${prevItem.id}`)?.focus()
+        }
         break
       }
       case 'ArrowDown': {
-        e.preventDefault()
-        // move focus to item below
+        const nextItem = getNextItem(item, allItems, true)
+        if (nextItem) {
+          e.preventDefault()
+          document.getElementById(`item-${nextItem.id}`)?.focus()
+        }
         break
       }
     }
   }
   return (
     <input
+      id={`item-${item.id}`}
       onKeyDown={handleKeyDown}
       type='text'
       className='w-full'
@@ -204,4 +227,26 @@ function ListItem ({ item }: ListItemProps) {
       defaultValue={item.title}
     />
   )
+}
+
+function getNextItem (item: Item, items: ItemMap, root = false): Item | null {
+  if (root && item.children.length) return item.children[0]
+  if (!item.id) return null
+  const parentItem = items[item.parentId || 'ROOT']
+  const myIndex = parentItem.children.findIndex(i => i.id == item.id)
+  if (parentItem.children[myIndex + 1]) return parentItem.children[myIndex + 1]
+  return getNextItem(parentItem, items)
+}
+
+function getPrevItem (item: Item, items: ItemMap): Item | null {
+  const parentItem = items[item.parentId || 'ROOT']
+  const myIndex = parentItem.children.findIndex(i => i.id == item.id)
+  if (myIndex === 0) return parentItem.id ? parentItem : null
+  const prevSibling = parentItem.children[myIndex - 1]
+  return furthestGrandchild(prevSibling)
+}
+
+function furthestGrandchild (item: Item): Item {
+  const lastChild = item.children.at(-1)
+  return lastChild ? furthestGrandchild(lastChild) : item
 }
