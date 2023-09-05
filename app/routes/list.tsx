@@ -2,7 +2,7 @@ import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import {
   Form,
-  useActionData,
+  useFetcher,
   useLoaderData,
   useSearchParams
 } from '@remix-run/react'
@@ -94,17 +94,17 @@ function buildIdMap (items: Item[], obj: ItemMap) {
 export default function Index () {
   const [searchParams] = useSearchParams()
   const { items, breadcrumbs } = useLoaderData<typeof loader>()
-  const actionData = useActionData<typeof action>()
+  const fetcher = useFetcher()
 
   const allItems: ItemMap = {}
   allItems[searchParams.get('id') || 'ROOT'] = { children: items }
   buildIdMap(items, allItems)
 
   React.useEffect(() => {
-    if (!actionData?.steris) return
-    navigator.clipboard.writeText(actionData.steris)
+    if (!fetcher.data) return
+    navigator.clipboard.writeText(fetcher.data.steris)
     // send toast
-  }, [actionData?.steris])
+  }, [fetcher.data])
 
   return (
     <div className='p-4'>
@@ -129,15 +129,14 @@ export default function Index () {
             </React.Fragment>
           ))}
           <li className='ml-10'>
-            <Form method='POST'>
-              <input type='hidden' name='_action' value='share' />
-              <button
-                type='submit'
-                className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
-              >
-                share
-              </button>
-            </Form>
+            <button
+              className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
+              onClick={() =>
+                fetcher.submit({ _action: 'share' }, { method: 'post' })
+              }
+            >
+              share
+            </button>
           </li>
         </ul>
       )}
@@ -193,7 +192,7 @@ function List ({ items, root, allItems }: ListProps) {
             <a
               href={`/list?id=${item.id}`}
               className={cx(
-                'flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300',
+                'flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400',
                 { 'bg-gray-300': item.collapsed }
               )}
             >
