@@ -57,6 +57,10 @@ export async function action ({ context, params, request }: ActionArgs) {
       await db.updateTitle(body.get('id'), body.get('title'))
       break
     }
+    case 'updateBody': {
+      await db.updateBody(body.get('id'), body.get('body'))
+      break
+    }
     case 'addItem': {
       await db.addItem(
         body.get('id') || undefined,
@@ -218,12 +222,7 @@ function List ({ items, root, rootId, allItems }: ListProps) {
             >
               <div className='h-2 w-2 rounded-full bg-gray-800' />
             </a>
-            <ListItem
-              item={item}
-              i={i}
-              allItems={allItems}
-              className='flex-1'
-            />
+            <ListItem item={item} i={i} allItems={allItems} />
           </div>
           {!item.collapsed && (
             <List items={item.children} allItems={allItems} />
@@ -254,10 +253,9 @@ interface ListItemProps {
   item: Item
   i: number
   allItems: ItemMap
-  className: string
 }
 
-function ListItem ({ item, i, allItems, className }: ListItemProps) {
+function ListItem ({ item, i, allItems }: ListItemProps) {
   const fetcher = useFetcher()
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
     // indent item
@@ -287,9 +285,10 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
       )
     }
 
-    // enter / exit note mode
+    // enter note mode
     if (e.shiftKey && e.key === 'Enter') {
-      // e.preventDefault()
+      e.preventDefault()
+      document.getElementById(`body-${item.id}`)?.focus()
       return
     }
 
@@ -348,6 +347,55 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
       }
     }
   }
+
+  function handleBodyKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
+    // mark item as complete / not complete
+    if (e.metaKey && e.key === 'Enter') {
+      e.preventDefault()
+      return fetcher.submit(
+        { _action: 'setCompleted', id: item.id, completed: !item.completed },
+        { method: 'post' }
+      )
+    }
+
+    // exit note mode
+    if (e.shiftKey && e.key === 'Enter') {
+      e.preventDefault()
+      document.getElementById(`item-${item.id}`)?.focus()
+    }
+
+    // exit note mode
+    if (e.key === 'Backspace' && e.target.value === '') {
+      e.preventDefault()
+      document.getElementById(`item-${item.id}`)?.focus()
+    }
+
+    // move cursor up
+    if (
+      (e.key === 'ArrowUp' || e.key === 'ArrowLeft') &&
+      e.target.selectionStart === 0
+    ) {
+      e.preventDefault()
+      const elem = document.getElementById(`item-${item.id}`)
+      elem?.focus()
+      if (e.key === 'ArrowLeft') {
+        const maxLength = elem?.value.length
+        elem?.setSelectionRange(maxLength, maxLength)
+      }
+    }
+
+    // move cursor down
+    if (
+      (e.key === 'ArrowDown' || e.key === 'ArrowRight') &&
+      e.target.selectionStart === e.target.value.length
+    ) {
+      const nextItem = getNextItem(item, allItems, true)
+      if (nextItem) {
+        e.preventDefault()
+        document.getElementById(`item-${nextItem.id}`)?.focus()
+      }
+    }
+  }
   return (
     <div className='flex-1'>
       <input
@@ -361,13 +409,28 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
           )
         }}
         type='text'
-        className={cx('w-full py-1 outline-none', className, {
+        className={cx('w-full py-1 outline-none', {
           'text-gray-400 line-through': item.completed
         })}
         name='title'
         defaultValue={item.title}
       />
-      {!!item.body && <p className='text-xs text-gray-400'>{item.body}</p>}
+      <input
+        id={`body-${item.id}`}
+        onKeyDown={handleBodyKeyDown}
+        onChange={e => {
+          fetcher.submit(
+            { _action: 'updateBody', id: item.id, body: e.target.value },
+            { method: 'post' }
+          )
+        }}
+        type='text'
+        className={cx(
+          '!w-full text-xs text-gray-400 outline-none focus:not-sr-only',
+          { 'sr-only': !item.body }
+        )}
+        defaultValue={item.body}
+      />
     </div>
   )
 }

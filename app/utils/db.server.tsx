@@ -53,6 +53,15 @@ export async function updateTitle (id: string, title: string) {
   await fs.writeFile(p, newContents)
 }
 
+export async function updateBody (id: string, body: string) {
+  const p = `./data/${id}.md`
+  const raw = await fs.readFile(p, 'utf-8')
+  const item = decode(raw, id)
+  item.body = body
+  const [, contents] = encode(item)
+  await fs.writeFile(p, contents)
+}
+
 export async function setCompleted (id: string, completed: boolean) {
   const p = `./data/${id}.md`
   const contents = await fs.readFile(p, 'utf-8')
@@ -84,7 +93,7 @@ export async function addItem (
     ? items.filter(i => i.parentId === sibling.id)
     : []
 
-  if (siblingChildren.length && !title) {
+  if (siblingChildren.length && !sibling.collapsed && !title) {
     newItem.parentId = sibling.id
     siblingChildren.unshift(newItem)
     await reorder(siblingChildren)
@@ -142,6 +151,7 @@ export async function indent (id: string): Promise<void> {
   const index = siblings.findIndex(i => i.id == id)
   if (index === 0) return
   const parent = siblings[index - 1]
+  parent.collapsed = false
   const newSiblings = items.filter(i => i.parentId === parent.id)
   item.parentId = parent.id
   siblings.splice(index, 1)
@@ -216,7 +226,8 @@ function writeFrontMatter (
 function formatValue (value: string | string[] | boolean | number): string {
   if (typeof value == 'boolean') return '' + value
   if (typeof value == 'number') return '' + value
-  if (typeof value == 'string') return `"${value.replace(/"/g, '\\"')}"`
+  if (typeof value == 'string')
+    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
   if (Array.isArray(value)) {
     return ['', ...value.map(tag => `  - ${tag}`)].join('\n')
   }
