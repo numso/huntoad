@@ -4,6 +4,7 @@ import * as uuid from 'uuid'
 
 interface FrontMatterObject {
   title: string
+  order: number
   completed: boolean
   collapsed: boolean
   parentId: string | null
@@ -22,15 +23,25 @@ export async function loadItems (): Promise<Item[]> {
   for (let file of files) {
     if (file === '.keep') continue
     const raw = await fs.readFile(`./data/${file}`, 'utf-8')
-    const formatted = fm<FrontMatterObject>(raw)
-    items.push({
-      ...formatted.attributes,
-      body: formatted.body,
-      id: file.replace('.md', ''),
-      children: []
-    })
+    items.push(decode(raw, file))
   }
+  items.sort((a, b) => a.order - b.order)
   return items
+}
+
+function decode (raw: string, file: string): Item {
+  const formatted = fm<FrontMatterObject>(raw)
+  return {
+    ...formatted.attributes,
+    body: formatted.body,
+    id: file.replace('.md', ''),
+    children: []
+  }
+}
+
+function encode (item: Item): [string, string] {
+  const { id, body, children, ...attributes } = item
+  return [id, `${writeFrontMatter(attributes)}\n${body}`]
 }
 
 export async function updateTitle (id: string, title: string) {
@@ -61,9 +72,14 @@ export async function setCollapsed (id: string, collapsed: boolean) {
 }
 
 export async function addItem (parentId: string | null) {
-  const id = uuid.v4()
-  const contents = `${writeFrontMatter({ parentId })}\n`
-  await fs.writeFile(`./data/${id}.md`, contents)
+  const items = await loadItems()
+  const children = items.filter(i => i.parentId === parentId)
+  children.push({ id: uuid.v4(), parentId })
+  for (let i = 0; i < children.length; ++i) {
+    children[i].order = i
+    const [id, contents] = encode(children[i])
+    await fs.writeFile(`./data/${id}.md`, contents)
+  }
 }
 
 export async function convertToSteris (id: string) {
@@ -94,10 +110,12 @@ function toSteris (item: Item, indent: string): string {
 }
 
 interface StringKeyMap {
-  [key: string]: string | string[] | boolean | null
+  [key: string]: string | string[] | boolean | number | null
 }
 
-function writeFrontMatter (attributes: StringKeyMap): string {
+function writeFrontMatter (
+  attributes: FrontMatterObject | StringKeyMap
+): string {
   const strings = []
   for (const key in attributes) {
     const value = attributes[key]
@@ -107,8 +125,9 @@ function writeFrontMatter (attributes: StringKeyMap): string {
   return ['---', ...strings, '---'].join('\n')
 }
 
-function formatValue (value: string | string[] | boolean): string {
+function formatValue (value: string | string[] | boolean | number): string {
   if (typeof value == 'boolean') return '' + value
+  if (typeof value == 'number') return '' + value
   if (typeof value == 'string') return `"${value.replace(/"/g, '\\"')}"`
   if (Array.isArray(value)) {
     return ['', ...value.map(tag => `  - ${tag}`)].join('\n')
