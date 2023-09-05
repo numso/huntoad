@@ -41,7 +41,7 @@ function decode (raw: string, file: string): Item {
 
 function encode (item: Item): [string, string] {
   const { id, body, children, ...attributes } = item
-  return [id, `${writeFrontMatter(attributes)}\n${body}`]
+  return [id, `${writeFrontMatter(attributes)}\n${body || ''}`]
 }
 
 export async function updateTitle (id: string, title: string) {
@@ -133,7 +133,7 @@ export async function convertToSteris (id: string) {
   populateChildren(item)
   return `
 ---
-${item.title}
+title: ${item.title}
 ---
 ${item.children.map(i => toSteris(i, '')).join('\n')}
   `.trim()

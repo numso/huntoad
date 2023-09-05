@@ -162,42 +162,40 @@ interface ListProps {
 
 function List ({ items, root, allItems }: ListProps) {
   return (
-    <ul className={cx('ml-4 pl-2', { 'border-l': !root })}>
+    <ul className={cx('ml-16', { 'border-l': !root })}>
       {items.map(item => (
-        <li key={item.id}>
+        <li key={item.id} className='-ml-6'>
           <div className='group flex items-center gap-2'>
-            <div className='relative flex h-5'>
-              <Form method='POST'>
-                <input type='hidden' name='_action' value='setCompleted' />
-                <input type='hidden' name='id' value={item.id} />
-                <input
-                  type='hidden'
-                  name='completed'
-                  value={'' + !item.completed}
-                />
-                <button
-                  type='submit'
-                  className='absolute -left-8 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
-                >
-                  {item.completed ? 'o' : 'x'}
-                </button>
-              </Form>
-              <Form method='POST'>
-                <input type='hidden' name='_action' value='setCollapsed' />
-                <input type='hidden' name='id' value={item.id} />
-                <input
-                  type='hidden'
-                  name='collapsed'
-                  value={'' + !item.collapsed}
-                />
-                <button
-                  type='submit'
-                  className='absolute -left-2.5 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
-                >
-                  {item.collapsed ? '>' : 'v'}
-                </button>
-              </Form>
-            </div>
+            <Form method='POST'>
+              <input type='hidden' name='_action' value='setCompleted' />
+              <input type='hidden' name='id' value={item.id} />
+              <input
+                type='hidden'
+                name='completed'
+                value={'' + !item.completed}
+              />
+              <button
+                type='submit'
+                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+              >
+                {item.completed ? 'o' : 'x'}
+              </button>
+            </Form>
+            <Form method='POST'>
+              <input type='hidden' name='_action' value='setCollapsed' />
+              <input type='hidden' name='id' value={item.id} />
+              <input
+                type='hidden'
+                name='collapsed'
+                value={'' + !item.collapsed}
+              />
+              <button
+                type='submit'
+                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+              >
+                {item.collapsed ? '>' : 'v'}
+              </button>
+            </Form>
             <a
               href={`/list?id=${item.id}`}
               className={cx(
@@ -219,7 +217,7 @@ function List ({ items, root, allItems }: ListProps) {
         </li>
       ))}
       {root && (
-        <li className='ml-6 mt-2'>
+        <li className='ml-2 mt-2'>
           <Form method='POST'>
             <input type='hidden' name='_action' value='addItem' />
             <button
@@ -312,17 +310,20 @@ function ListItem ({ item, allItems }: ListItemProps) {
     }
   }
   return (
-    <input
-      id={`item-${item.id}`}
-      autoFocus
-      onKeyDown={handleKeyDown}
-      type='text'
-      className={cx('w-full py-1 outline-none', {
-        'text-gray-400 line-through': item.completed
-      })}
-      name='title'
-      defaultValue={item.title}
-    />
+    <>
+      <input
+        id={`item-${item.id}`}
+        autoFocus
+        onKeyDown={handleKeyDown}
+        type='text'
+        className={cx('w-full py-1 outline-none', {
+          'text-gray-400 line-through': item.completed
+        })}
+        name='title'
+        defaultValue={item.title}
+      />
+      {!!item.body && <p className='text-xs text-gray-400'>{item.body}</p>}
+    </>
   )
 }
 
