@@ -58,8 +58,11 @@ export async function action ({ context, params, request }: ActionArgs) {
       break
     }
     case 'addItem': {
-      const id = url.searchParams.get('id')
-      await db.addItem(id)
+      await db.addItem(
+        body.get('id') || undefined,
+        +body.get('position'),
+        body.get('title')
+      )
       break
     }
     case 'share': {
@@ -149,7 +152,12 @@ export default function Index () {
           </li>
         </ul>
       )}
-      <List items={items} allItems={allItems} root />
+      <List
+        items={items}
+        allItems={allItems}
+        root
+        rootId={searchParams.get('id') || ''}
+      />
     </div>
   )
 }
@@ -158,12 +166,13 @@ interface ListProps {
   items: Item[]
   allItems: ItemMap
   root?: boolean
+  rootId?: string
 }
 
-function List ({ items, root, allItems }: ListProps) {
+function List ({ items, root, rootId, allItems }: ListProps) {
   return (
     <ul className={cx('ml-16', { 'border-l': !root })}>
-      {items.map(item => (
+      {items.map((item, i) => (
         <li key={item.id} className='-ml-6'>
           <div className='group flex items-center gap-2'>
             <Form method='POST'>
@@ -205,11 +214,12 @@ function List ({ items, root, allItems }: ListProps) {
             >
               <div className='h-2 w-2 rounded-full bg-gray-800' />
             </a>
-            <Form method='POST' className='flex-1'>
-              <input type='hidden' name='_action' value='updateTitle' />
-              <input type='hidden' name='id' value={item.id} />
-              <ListItem item={item} allItems={allItems} />
-            </Form>
+            <ListItem
+              item={item}
+              i={i}
+              allItems={allItems}
+              className='flex-1'
+            />
           </div>
           {!item.collapsed && (
             <List items={item.children} allItems={allItems} />
@@ -217,9 +227,12 @@ function List ({ items, root, allItems }: ListProps) {
         </li>
       ))}
       {root && (
-        <li className='ml-2 mt-2'>
+        <li className='ml-8 mt-2'>
           <Form method='POST'>
             <input type='hidden' name='_action' value='addItem' />
+            <input type='hidden' name='id' value={rootId} />
+            <input type='hidden' name='position' value={items.length} />
+            <input type='hidden' name='title' value='' />
             <button
               type='submit'
               className='flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300'
@@ -235,10 +248,12 @@ function List ({ items, root, allItems }: ListProps) {
 
 interface ListItemProps {
   item: Item
+  i: number
   allItems: ItemMap
+  className: string
 }
 
-function ListItem ({ item, allItems }: ListItemProps) {
+function ListItem ({ item, i, allItems, className }: ListItemProps) {
   const fetcher = useFetcher()
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
     // indent item
@@ -269,9 +284,17 @@ function ListItem ({ item, allItems }: ListItemProps) {
 
     // create new item
     if (e.key === 'Enter') {
-      // e.preventDefault()
-      // create new item after this one
-      // separate content at cursor
+      e.preventDefault()
+      const title = e.target.value.slice(e.target.selectionStart)
+      fetcher.submit(
+        {
+          _action: 'addItem',
+          id: item.parentId,
+          position: i + 1,
+          title
+        },
+        { method: 'post' }
+      )
     }
 
     // delete item
@@ -315,8 +338,14 @@ function ListItem ({ item, allItems }: ListItemProps) {
         id={`item-${item.id}`}
         autoFocus
         onKeyDown={handleKeyDown}
+        onChange={e => {
+          fetcher.submit(
+            { _action: 'updateTitle', id: item.id, title: e.target.value },
+            { method: 'post' }
+          )
+        }}
         type='text'
-        className={cx('w-full py-1 outline-none', {
+        className={cx('w-full py-1 outline-none', className, {
           'text-gray-400 line-through': item.completed
         })}
         name='title'

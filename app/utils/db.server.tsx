@@ -71,10 +71,18 @@ export async function setCollapsed (id: string, collapsed: boolean) {
   await fs.writeFile(p, newContents)
 }
 
-export async function addItem (parentId: string | null) {
+export async function addItem (
+  parentId: string | null,
+  position: number,
+  title: string
+) {
   const items = await loadItems()
   const children = items.filter(i => i.parentId === parentId)
-  children.push({ id: uuid.v4(), parentId })
+  children.splice(position, 0, { id: uuid.v4(), parentId, title })
+  if (title) {
+    const prev = children[position - 1]
+    prev.title = prev.title.slice(0, -title.length)
+  }
   await reorder(children)
 }
 
