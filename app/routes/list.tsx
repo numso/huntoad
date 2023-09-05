@@ -1,6 +1,7 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Form, useActionData, useLoaderData } from '@remix-run/react'
+import cx from 'clsx'
 import * as React from 'react'
 
 import type { Item } from '../utils/db.server'
@@ -60,6 +61,14 @@ export async function action ({ context, params, request }: ActionArgs) {
       const id = url.searchParams.get('id')
       const steris = await db.convertToSteris(id)
       return json({ steris })
+    }
+    case 'setCompleted': {
+      await db.setCompleted(body.get('id'), body.get('completed') === 'true')
+      break
+    }
+    case 'setCollapsed': {
+      await db.setCollapsed(body.get('id'), body.get('collapsed') === 'true')
+      break
     }
   }
 
@@ -142,10 +151,43 @@ function List ({ items, root, allItems }: ListProps) {
     <ul>
       {items.map(item => (
         <li key={item.id} className='ml-6'>
-          <div className='flex items-center gap-2'>
+          <div className='group flex items-center gap-2'>
+            <Form method='POST'>
+              <input type='hidden' name='_action' value='setCompleted' />
+              <input type='hidden' name='id' value={item.id} />
+              <input
+                type='hidden'
+                name='completed'
+                value={'' + !item.completed}
+              />
+              <button
+                type='submit'
+                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+              >
+                {item.completed ? 'o' : 'x'}
+              </button>
+            </Form>
+            <Form method='POST'>
+              <input type='hidden' name='_action' value='setCollapsed' />
+              <input type='hidden' name='id' value={item.id} />
+              <input
+                type='hidden'
+                name='collapsed'
+                value={'' + !item.collapsed}
+              />
+              <button
+                type='submit'
+                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+              >
+                {item.collapsed ? '>' : 'v'}
+              </button>
+            </Form>
             <a
               href={`/list?id=${item.id}`}
-              className='flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300'
+              className={cx(
+                'flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300',
+                { 'bg-gray-300': item.collapsed }
+              )}
             >
               <div className='h-2 w-2 rounded-full bg-gray-800' />
             </a>
@@ -155,7 +197,9 @@ function List ({ items, root, allItems }: ListProps) {
               <ListItem item={item} allItems={allItems} />
             </Form>
           </div>
-          <List items={item.children} allItems={allItems} />
+          {!item.collapsed && (
+            <List items={item.children} allItems={allItems} />
+          )}
         </li>
       ))}
       {root && (
@@ -182,38 +226,57 @@ interface ListItemProps {
 
 function ListItem ({ item, allItems }: ListItemProps) {
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
-    console.log({ key: e.key })
-    switch (e.key) {
-      case 'Tab': {
+    // indent item
+    if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault()
+      // should become last child of immediate prev sibling
+    }
+
+    // outdent item
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault()
+      // should come right after parent in grandparent.children list
+    }
+
+    // create new item
+    if (e.key === 'Enter') {
+      // e.preventDefault()
+      // create new item after this one
+      // separate content at cursor
+    }
+
+    // delete item
+    if (e.key === 'Backspace') {
+      // if cursor is at position 0, delete this item, append to prev item, focus accordingly
+    }
+
+    // move cursor up
+    if (
+      e.key === 'ArrowUp' ||
+      (e.key === 'ArrowLeft' && e.target.selectionStart === 0)
+    ) {
+      const prevItem = getPrevItem(item, allItems)
+      if (prevItem) {
         e.preventDefault()
-        // indent/outdent based on if e.shiftKey == true
-        break
+        const elem = document.getElementById(`item-${prevItem.id}`)
+        elem?.focus()
+        if (e.key === 'ArrowLeft') {
+          const maxLength = elem?.value.length
+          elem?.setSelectionRange(maxLength, maxLength)
+        }
       }
-      case 'Enter': {
-        // e.preventDefault()
-        // create new item after this one
-        // separate content at cursor
-        break
-      }
-      case 'Backspace': {
-        // if cursor is at position 0, delete this item, append to prev item, focus accordingly
-        break
-      }
-      case 'ArrowUp': {
+    }
+
+    // move cursor down
+    if (
+      e.key === 'ArrowDown' ||
+      (e.key === 'ArrowRight' &&
+        e.target.selectionStart === e.target.value.length)
+    ) {
+      const nextItem = getNextItem(item, allItems, true)
+      if (nextItem) {
         e.preventDefault()
-        const prevItem = getPrevItem(item, allItems)
-        if (prevItem) {
-          document.getElementById(`item-${prevItem.id}`)?.focus()
-        }
-        break
-      }
-      case 'ArrowDown': {
-        const nextItem = getNextItem(item, allItems, true)
-        if (nextItem) {
-          e.preventDefault()
-          document.getElementById(`item-${nextItem.id}`)?.focus()
-        }
-        break
+        document.getElementById(`item-${nextItem.id}`)?.focus()
       }
     }
   }
@@ -222,7 +285,7 @@ function ListItem ({ item, allItems }: ListItemProps) {
       id={`item-${item.id}`}
       onKeyDown={handleKeyDown}
       type='text'
-      className='w-full'
+      className={cx('w-full', { 'text-gray-400 line-through': item.completed })}
       name='title'
       defaultValue={item.title}
     />
