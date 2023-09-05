@@ -109,7 +109,7 @@ function writeFrontMatter (attributes: StringKeyMap): string {
 
 function formatValue (value: string | string[] | boolean): string {
   if (typeof value == 'boolean') return '' + value
-  if (typeof value == 'string') return value
+  if (typeof value == 'string') return `"${value.replace(/"/g, '\\"')}"`
   if (Array.isArray(value)) {
     return ['', ...value.map(tag => `  - ${tag}`)].join('\n')
   }

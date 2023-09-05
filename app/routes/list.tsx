@@ -107,9 +107,9 @@ export default function Index () {
   }, [actionData?.steris])
 
   return (
-    <div>
+    <div className='p-4'>
       {!!breadcrumbs.length && (
-        <ul className='group flex p-4'>
+        <ul className='group flex pb-4'>
           <li>
             <a className='hover:text-blue-500' href='/list'>
               @
@@ -141,7 +141,6 @@ export default function Index () {
           </li>
         </ul>
       )}
-
       <List items={items} allItems={allItems} root />
     </div>
   )
@@ -155,40 +154,42 @@ interface ListProps {
 
 function List ({ items, root, allItems }: ListProps) {
   return (
-    <ul>
+    <ul className={cx('ml-4 pl-2', { 'border-l': !root })}>
       {items.map(item => (
-        <li key={item.id} className='ml-6'>
+        <li key={item.id}>
           <div className='group flex items-center gap-2'>
-            <Form method='POST'>
-              <input type='hidden' name='_action' value='setCompleted' />
-              <input type='hidden' name='id' value={item.id} />
-              <input
-                type='hidden'
-                name='completed'
-                value={'' + !item.completed}
-              />
-              <button
-                type='submit'
-                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
-              >
-                {item.completed ? 'o' : 'x'}
-              </button>
-            </Form>
-            <Form method='POST'>
-              <input type='hidden' name='_action' value='setCollapsed' />
-              <input type='hidden' name='id' value={item.id} />
-              <input
-                type='hidden'
-                name='collapsed'
-                value={'' + !item.collapsed}
-              />
-              <button
-                type='submit'
-                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
-              >
-                {item.collapsed ? '>' : 'v'}
-              </button>
-            </Form>
+            <div className='relative flex h-5'>
+              <Form method='POST'>
+                <input type='hidden' name='_action' value='setCompleted' />
+                <input type='hidden' name='id' value={item.id} />
+                <input
+                  type='hidden'
+                  name='completed'
+                  value={'' + !item.completed}
+                />
+                <button
+                  type='submit'
+                  className='absolute -left-8 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+                >
+                  {item.completed ? 'o' : 'x'}
+                </button>
+              </Form>
+              <Form method='POST'>
+                <input type='hidden' name='_action' value='setCollapsed' />
+                <input type='hidden' name='id' value={item.id} />
+                <input
+                  type='hidden'
+                  name='collapsed'
+                  value={'' + !item.collapsed}
+                />
+                <button
+                  type='submit'
+                  className='absolute -left-2.5 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+                >
+                  {item.collapsed ? '>' : 'v'}
+                </button>
+              </Form>
+            </div>
             <a
               href={`/list?id=${item.id}`}
               className={cx(
