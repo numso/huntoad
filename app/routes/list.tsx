@@ -105,7 +105,7 @@ interface ItemMap {
 }
 
 function buildIdMap (items: Item[], obj: ItemMap) {
-  for (let item of items) {
+  for (const item of items) {
     obj[item.id] = item
     buildIdMap(item.children, obj)
   }

@@ -20,7 +20,7 @@ export type Item = FrontMatterObject & {
 export async function loadItems (): Promise<Item[]> {
   const files = await fs.readdir('./data', 'utf-8')
   const items = []
-  for (let file of files) {
+  for (const file of files) {
     if (file === '.keep') continue
     const raw = await fs.readFile(`./data/${file}`, 'utf-8')
     items.push(decode(raw, file))
@@ -101,7 +101,7 @@ export async function addItem (
     siblings.splice(position + 1, 0, newItem)
     if (title) {
       sibling.title = sibling.title.slice(0, -title.length)
-      for (let child of siblingChildren) child.parentId = newItem.id
+      for (const child of siblingChildren) child.parentId = newItem.id
       await reorder(siblingChildren)
     }
     await reorder(siblings)
@@ -121,7 +121,7 @@ export async function deleteItem (id: string) {
     const prevChildren = items.filter(i => i.parentId == prevSibling.id)
     if (prevChildren.length) return
     prevSibling.title += item.title
-    for (let child of children) child.parentId = prevSibling.id
+    for (const child of children) child.parentId = prevSibling.id
     await reorder(children)
   }
   doDeleteItem(item, items)
