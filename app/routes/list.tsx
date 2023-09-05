@@ -65,6 +65,10 @@ export async function action ({ context, params, request }: ActionArgs) {
       )
       break
     }
+    case 'deleteItem': {
+      await db.deleteItem(body.get('id'))
+      break
+    }
     case 'share': {
       const id = url.searchParams.get('id')
       const steris = await db.convertToSteris(id)
@@ -259,19 +263,25 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
     // indent item
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault()
-      fetcher.submit({ _action: 'indent', id: item.id }, { method: 'post' })
+      return fetcher.submit(
+        { _action: 'indent', id: item.id },
+        { method: 'post' }
+      )
     }
 
     // outdent item
     if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault()
-      fetcher.submit({ _action: 'outdent', id: item.id }, { method: 'post' })
+      return fetcher.submit(
+        { _action: 'outdent', id: item.id },
+        { method: 'post' }
+      )
     }
 
     // mark item as complete / not complete
     if (e.metaKey && e.key === 'Enter') {
       e.preventDefault()
-      fetcher.submit(
+      return fetcher.submit(
         { _action: 'setCompleted', id: item.id, completed: !item.completed },
         { method: 'post' }
       )
@@ -280,17 +290,18 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
     // enter / exit note mode
     if (e.shiftKey && e.key === 'Enter') {
       // e.preventDefault()
+      return
     }
 
     // create new item
     if (e.key === 'Enter') {
       e.preventDefault()
       const title = e.target.value.slice(e.target.selectionStart)
-      fetcher.submit(
+      return fetcher.submit(
         {
           _action: 'addItem',
           id: item.parentId,
-          position: i + 1,
+          position: i,
           title
         },
         { method: 'post' }
@@ -299,7 +310,12 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
 
     // delete item
     if (e.key === 'Backspace') {
-      // if cursor is at position 0, delete this item, append to prev item, focus accordingly
+      if (e.target.selectionStart === 0) {
+        return fetcher.submit(
+          { _action: 'deleteItem', id: item.id },
+          { method: 'post' }
+        )
+      }
     }
 
     // move cursor up
@@ -333,7 +349,7 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
     }
   }
   return (
-    <>
+    <div className='flex-1'>
       <input
         id={`item-${item.id}`}
         autoFocus
@@ -352,7 +368,7 @@ function ListItem ({ item, i, allItems, className }: ListItemProps) {
         defaultValue={item.title}
       />
       {!!item.body && <p className='text-xs text-gray-400'>{item.body}</p>}
-    </>
+    </div>
   )
 }
 

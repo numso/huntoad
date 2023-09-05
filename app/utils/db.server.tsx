@@ -77,12 +77,52 @@ export async function addItem (
   title: string
 ) {
   const items = await loadItems()
-  const children = items.filter(i => i.parentId === parentId)
-  children.splice(position, 0, { id: uuid.v4(), parentId, title })
-  if (title) {
-    const prev = children[position - 1]
-    prev.title = prev.title.slice(0, -title.length)
+  const newItem = { id: uuid.v4(), parentId, title }
+  const siblings = items.filter(i => i.parentId === parentId)
+  const sibling = siblings[position]
+  const siblingChildren = sibling
+    ? items.filter(i => i.parentId === sibling.id)
+    : []
+
+  if (siblingChildren.length && !title) {
+    newItem.parentId = sibling.id
+    siblingChildren.unshift(newItem)
+    await reorder(siblingChildren)
+  } else {
+    siblings.splice(position + 1, 0, newItem)
+    if (title) {
+      sibling.title = sibling.title.slice(0, -title.length)
+      for (let child of siblingChildren) child.parentId = newItem.id
+      await reorder(siblingChildren)
+    }
+    await reorder(siblings)
   }
+}
+
+export async function deleteItem (id: string) {
+  const items = await loadItems()
+  const item = items.find(i => i.id == id)
+  if (!item) return
+  const children = items.filter(i => i.parentId === item.id)
+  if (item.title || children.length) {
+    const siblings = items.filter(i => i.parentId === item.parentId)
+    const index = siblings.findIndex(i => i.id == id)
+    if (index === 0) return
+    const prevSibling = siblings[index - 1]
+    const prevChildren = items.filter(i => i.parentId == prevSibling.id)
+    if (prevChildren.length) return
+    prevSibling.title += item.title
+    for (let child of children) child.parentId = prevSibling.id
+    await reorder(children)
+  }
+  doDeleteItem(item, items)
+}
+
+async function doDeleteItem (item: Item, items: Item[]) {
+  await fs.rm(`./data/${item.id}.md`)
+  const children = items.filter(
+    i => i.parentId === item.parentId && i.id !== item.id
+  )
   await reorder(children)
 }
 
