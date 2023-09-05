@@ -75,11 +75,51 @@ export async function addItem (parentId: string | null) {
   const items = await loadItems()
   const children = items.filter(i => i.parentId === parentId)
   children.push({ id: uuid.v4(), parentId })
+  await reorder(children)
+}
+
+async function reorder (children: Item[]) {
   for (let i = 0; i < children.length; ++i) {
     children[i].order = i
     const [id, contents] = encode(children[i])
     await fs.writeFile(`./data/${id}.md`, contents)
   }
+}
+
+export async function indent (id: string): Promise<void> {
+  const items = await loadItems()
+  const item = items.find(i => i.id == id)
+  if (!item) return
+  const siblings = items.filter(i => i.parentId === item.parentId)
+  const index = siblings.findIndex(i => i.id == id)
+  if (index === 0) return
+  const parent = siblings[index - 1]
+  const newSiblings = items.filter(i => i.parentId === parent.id)
+  item.parentId = parent.id
+  siblings.splice(index, 1)
+  newSiblings.push(item)
+  await reorder(siblings)
+  await reorder(newSiblings)
+}
+
+export async function outdent (
+  id: string,
+  rootId: string | null
+): Promise<void> {
+  const items = await loadItems()
+  const item = items.find(i => i.id == id)
+  if (!item || item.parentId == rootId) return
+  const parent = items.find(i => i.id == item.parentId)
+  if (!parent) return
+  const siblings = items.filter(i => i.parentId === item.parentId)
+  const index = siblings.findIndex(i => i.id == id)
+  siblings.splice(index, 1)
+  const newSiblings = items.filter(i => i.parentId === parent.parentId)
+  const index2 = newSiblings.findIndex(i => i.id == parent.id)
+  newSiblings.splice(index2 + 1, 0, item)
+  item.parentId = parent.parentId
+  await reorder(siblings)
+  await reorder(newSiblings)
 }
 
 export async function convertToSteris (id: string) {

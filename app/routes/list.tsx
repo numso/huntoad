@@ -75,6 +75,15 @@ export async function action ({ context, params, request }: ActionArgs) {
       await db.setCollapsed(body.get('id'), body.get('collapsed') === 'true')
       break
     }
+    case 'indent': {
+      await db.indent(body.get('id'))
+      break
+    }
+    case 'outdent': {
+      const id = url.searchParams.get('id')
+      await db.outdent(body.get('id'), id)
+      break
+    }
   }
 
   return null
@@ -232,22 +241,27 @@ interface ListItemProps {
 }
 
 function ListItem ({ item, allItems }: ListItemProps) {
+  const fetcher = useFetcher()
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
     // indent item
-    if (e.key === 'Tab' && e.shiftKey) {
+    if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault()
-      // should become last child of immediate prev sibling
+      fetcher.submit({ _action: 'indent', id: item.id }, { method: 'post' })
     }
 
     // outdent item
-    if (e.key === 'Tab' && !e.shiftKey) {
+    if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault()
-      // should come right after parent in grandparent.children list
+      fetcher.submit({ _action: 'outdent', id: item.id }, { method: 'post' })
     }
 
     // mark item as complete / not complete
     if (e.metaKey && e.key === 'Enter') {
       e.preventDefault()
+      fetcher.submit(
+        { _action: 'setCompleted', id: item.id, completed: !item.completed },
+        { method: 'post' }
+      )
     }
 
     // enter / exit note mode
@@ -300,6 +314,7 @@ function ListItem ({ item, allItems }: ListItemProps) {
   return (
     <input
       id={`item-${item.id}`}
+      autoFocus
       onKeyDown={handleKeyDown}
       type='text'
       className={cx('w-full py-1 outline-none', {
