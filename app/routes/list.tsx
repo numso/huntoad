@@ -11,6 +11,7 @@ import * as React from 'react'
 
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
+import * as Icons from '../utils/icons'
 
 interface Breadcrumb {
   id: string
@@ -193,9 +194,13 @@ function List ({ items, root, rootId, allItems }: ListProps) {
               />
               <button
                 type='submit'
-                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
               >
-                {item.completed ? 'o' : 'x'}
+                {item.completed ? (
+                  <Icons.Undo className='h-3 w-3' />
+                ) : (
+                  <Icons.Check className='h-3 w-3' />
+                )}
               </button>
             </Form>
             <Form method='POST'>
@@ -208,9 +213,13 @@ function List ({ items, root, rootId, allItems }: ListProps) {
               />
               <button
                 type='submit'
-                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-300 group-hover:opacity-100'
+                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
               >
-                {item.collapsed ? '>' : 'v'}
+                <Icons.ChevronRight
+                  className={cx('h-3 w-3 transition-all', {
+                    'rotate-90': !item.collapsed
+                  })}
+                />
               </button>
             </Form>
             <a
