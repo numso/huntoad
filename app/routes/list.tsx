@@ -1,6 +1,11 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { Form, useActionData, useLoaderData } from '@remix-run/react'
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useSearchParams
+} from '@remix-run/react'
 import cx from 'clsx'
 import * as React from 'react'
 
@@ -87,10 +92,12 @@ function buildIdMap (items: Item[], obj: ItemMap) {
 }
 
 export default function Index () {
+  const [searchParams] = useSearchParams()
   const { items, breadcrumbs } = useLoaderData<typeof loader>()
   const actionData = useActionData<typeof action>()
 
-  const allItems: ItemMap = { ROOT: { children: items } }
+  const allItems: ItemMap = {}
+  allItems[searchParams.get('id') || 'ROOT'] = { children: items }
   buildIdMap(items, allItems)
 
   React.useEffect(() => {
@@ -109,9 +116,9 @@ export default function Index () {
             </a>
           </li>
           {breadcrumbs.map(crumb => (
-            <>
+            <React.Fragment key={crumb.id}>
               <li className='px-4 text-gray-300'>/</li>
-              <li key={crumb.id}>
+              <li>
                 <a
                   className='hover:text-blue-500'
                   href={`/list?id=${crumb.id}`}
@@ -119,7 +126,7 @@ export default function Index () {
                   {crumb.label}
                 </a>
               </li>
-            </>
+            </React.Fragment>
           ))}
           <li className='ml-10'>
             <Form method='POST'>
@@ -238,6 +245,16 @@ function ListItem ({ item, allItems }: ListItemProps) {
       // should come right after parent in grandparent.children list
     }
 
+    // mark item as complete / not complete
+    if (e.metaKey && e.key === 'Enter') {
+      e.preventDefault()
+    }
+
+    // enter / exit note mode
+    if (e.shiftKey && e.key === 'Enter') {
+      // e.preventDefault()
+    }
+
     // create new item
     if (e.key === 'Enter') {
       // e.preventDefault()
@@ -285,7 +302,9 @@ function ListItem ({ item, allItems }: ListItemProps) {
       id={`item-${item.id}`}
       onKeyDown={handleKeyDown}
       type='text'
-      className={cx('w-full', { 'text-gray-400 line-through': item.completed })}
+      className={cx('w-full py-1 outline-none', {
+        'text-gray-400 line-through': item.completed
+      })}
       name='title'
       defaultValue={item.title}
     />
@@ -293,7 +312,7 @@ function ListItem ({ item, allItems }: ListItemProps) {
 }
 
 function getNextItem (item: Item, items: ItemMap, root = false): Item | null {
-  if (root && item.children.length) return item.children[0]
+  if (root && item.children.length && !item.collapsed) return item.children[0]
   if (!item.id) return null
   const parentItem = items[item.parentId || 'ROOT']
   const myIndex = parentItem.children.findIndex(i => i.id == item.id)
@@ -310,6 +329,7 @@ function getPrevItem (item: Item, items: ItemMap): Item | null {
 }
 
 function furthestGrandchild (item: Item): Item {
+  if (item.collapsed) return item
   const lastChild = item.children.at(-1)
   return lastChild ? furthestGrandchild(lastChild) : item
 }
