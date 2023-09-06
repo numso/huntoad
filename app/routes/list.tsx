@@ -7,10 +7,11 @@ import {
   useSearchParams
 } from '@remix-run/react'
 import cx from 'clsx'
-import * as React from 'react'
+import React from 'react'
 
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
+import { DndContext, useDragger } from '../utils/dnd'
 import * as Icons from '../utils/icons'
 
 interface Breadcrumb {
@@ -70,6 +71,14 @@ export async function action ({ context, params, request }: ActionArgs) {
       )
       break
     }
+    case 'moveItem': {
+      await db.moveItem(
+        body.get('dragId'),
+        body.get('dropId'),
+        body.get('direction')
+      )
+      break
+    }
     case 'deleteItem': {
       await db.deleteItem(body.get('id'))
       break
@@ -112,6 +121,25 @@ function buildIdMap (items: Item[], obj: ItemMap) {
   }
 }
 
+function findSuitableDroparea (
+  x: number,
+  y: number
+): [Element, string, string] | null {
+  const dragZone = document.querySelector('[data-dragging=true]')
+  const zones = [...document.querySelectorAll('.dz')].reverse()
+  const zone = zones.find(el => y > el.offsetTop)
+  if (!zone) return [zones.at(-1), zones.at(-1).dataset.id, 'above']
+  if (dragZone.contains(zone)) return null
+  if (zone.dataset.collapsed === 'true') return null
+  return [
+    zone,
+    zone.dataset.id,
+    window.scrollX + zone.offsetLeft + 50 > x && zone.dataset.childcount === '0'
+      ? 'below'
+      : 'child'
+  ]
+}
+
 export default function Index () {
   const [searchParams] = useSearchParams()
   const { items, breadcrumbs } = useLoaderData<typeof loader>()
@@ -128,46 +156,92 @@ export default function Index () {
   }, [fetcher.data])
 
   return (
-    <div className='p-4'>
-      {!!breadcrumbs.length && (
-        <ul className='group flex pb-4'>
-          <li>
-            <a className='hover:text-blue-500' href='/list'>
-              @
-            </a>
-          </li>
-          {breadcrumbs.map(crumb => (
-            <React.Fragment key={crumb.id}>
-              <li className='px-4 text-gray-300'>/</li>
-              <li>
-                <a
-                  className='hover:text-blue-500'
-                  href={`/list?id=${crumb.id}`}
-                >
-                  {crumb.label}
-                </a>
-              </li>
-            </React.Fragment>
-          ))}
-          <li className='ml-10'>
-            <button
-              className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
-              onClick={() =>
-                fetcher.submit({ _action: 'share' }, { method: 'post' })
-              }
-            >
-              share
-            </button>
-          </li>
-        </ul>
-      )}
-      <List
-        items={items}
-        allItems={allItems}
-        root
-        rootId={searchParams.get('id') || ''}
+    <DndContext
+      onMove={e => {
+        const droparea = findSuitableDroparea(
+          window.scrollX + e.clientX,
+          window.scrollY + e.clientY
+        )
+        if (!droparea) {
+          const dropzone = document.getElementById('dropzone')
+          if (dropzone) dropzone.style.top = '-10px'
+          return null
+        }
+        const [el, id, direction] = droparea
+        const dropzone = document.getElementById('dropzone')
+        if (dropzone) {
+          dropzone.style.top =
+            el.offsetTop + (direction === 'above' ? -8 : 25) + 'px'
+          dropzone.style.left =
+            el.offsetLeft + (direction === 'child' ? 50 : 10) + 'px'
+          dropzone.style.width = '400px'
+        }
+        return [id, direction]
+      }}
+      onDrop={(e, state, dragItem) => {
+        if (!state) return
+        const dropzone = document.getElementById('dropzone')
+        if (dropzone) dropzone.style.top = '-10px'
+        fetcher.submit(
+          {
+            _action: 'moveItem',
+            dragId: dragItem.id,
+            dropId: state[0],
+            direction: state[1]
+          },
+          { method: 'post' }
+        )
+      }}
+      onCancel={() => {
+        const dropzone = document.getElementById('dropzone')
+        if (dropzone) dropzone.style.top = '-10px'
+      }}
+    >
+      <div
+        id='dropzone'
+        className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500'
       />
-    </div>
+      <div className='p-4'>
+        {!!breadcrumbs.length && (
+          <ul className='group flex pb-4'>
+            <li>
+              <a className='hover:text-blue-500' href='/list'>
+                @
+              </a>
+            </li>
+            {breadcrumbs.map(crumb => (
+              <React.Fragment key={crumb.id}>
+                <li className='px-4 text-gray-300'>/</li>
+                <li>
+                  <a
+                    className='hover:text-blue-500'
+                    href={`/list?id=${crumb.id}`}
+                  >
+                    {crumb.label}
+                  </a>
+                </li>
+              </React.Fragment>
+            ))}
+            <li className='ml-10'>
+              <button
+                className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
+                onClick={() =>
+                  fetcher.submit({ _action: 'share' }, { method: 'post' })
+                }
+              >
+                share
+              </button>
+            </li>
+          </ul>
+        )}
+        <List
+          items={items}
+          allItems={allItems}
+          root
+          rootId={searchParams.get('id') || ''}
+        />
+      </div>
+    </DndContext>
   )
 }
 
@@ -182,61 +256,7 @@ function List ({ items, root, rootId, allItems }: ListProps) {
   return (
     <ul className={cx('ml-16', { 'border-l': !root })}>
       {items.map((item, i) => (
-        <li key={item.id} className='-ml-6'>
-          <div className='group flex items-center gap-2'>
-            <Form method='POST'>
-              <input type='hidden' name='_action' value='setCompleted' />
-              <input type='hidden' name='id' value={item.id} />
-              <input
-                type='hidden'
-                name='completed'
-                value={'' + !item.completed}
-              />
-              <button
-                type='submit'
-                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
-              >
-                {item.completed ? (
-                  <Icons.Undo className='h-3 w-3' />
-                ) : (
-                  <Icons.Check className='h-3 w-3' />
-                )}
-              </button>
-            </Form>
-            <Form method='POST'>
-              <input type='hidden' name='_action' value='setCollapsed' />
-              <input type='hidden' name='id' value={item.id} />
-              <input
-                type='hidden'
-                name='collapsed'
-                value={'' + !item.collapsed}
-              />
-              <button
-                type='submit'
-                className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
-              >
-                <Icons.ChevronRight
-                  className={cx('h-3 w-3 transition-all', {
-                    'rotate-90': !item.collapsed
-                  })}
-                />
-              </button>
-            </Form>
-            <a
-              href={`/list?id=${item.id}`}
-              className={cx(
-                'flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400',
-                { 'bg-gray-300': item.collapsed }
-              )}
-            >
-              <div className='h-2 w-2 rounded-full bg-gray-800' />
-            </a>
-            <ListItem item={item} i={i} allItems={allItems} />
-          </div>
-          {!item.collapsed && (
-            <List items={item.children} allItems={allItems} />
-          )}
-        </li>
+        <ListItem key={item.id} item={item} i={i} allItems={allItems} />
       ))}
       {root && (
         <li className='ml-8 mt-2'>
@@ -263,8 +283,77 @@ interface ListItemProps {
   i: number
   allItems: ItemMap
 }
-
 function ListItem ({ item, i, allItems }: ListItemProps) {
+  const [startDrag, dragItem] = useDragger()
+  return (
+    <li
+      key={item.id}
+      data-dragging={item === dragItem}
+      className={cx('-ml-6 transition-all', {
+        'bg-gray-200': item === dragItem
+      })}
+    >
+      <div className='group flex items-center gap-2'>
+        <Form method='POST'>
+          <input type='hidden' name='_action' value='setCompleted' />
+          <input type='hidden' name='id' value={item.id} />
+          <input type='hidden' name='completed' value={'' + !item.completed} />
+          <button
+            type='submit'
+            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
+          >
+            {item.completed ? (
+              <Icons.Undo className='h-3 w-3' />
+            ) : (
+              <Icons.Check className='h-3 w-3' />
+            )}
+          </button>
+        </Form>
+        <Form method='POST'>
+          <input type='hidden' name='_action' value='setCollapsed' />
+          <input type='hidden' name='id' value={item.id} />
+          <input type='hidden' name='collapsed' value={'' + !item.collapsed} />
+          <button
+            type='submit'
+            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
+          >
+            <Icons.ChevronRight
+              className={cx('h-3 w-3 transition-all', {
+                'rotate-90': !item.collapsed
+              })}
+            />
+          </button>
+        </Form>
+        <a
+          data-id={item.id}
+          data-collapsed={item.collapsed}
+          data-childcount={item.children.length}
+          href={`/list?id=${item.id}`}
+          className={cx(
+            'dz flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400',
+            { 'bg-gray-300': item.collapsed }
+          )}
+          onMouseDown={e => {
+            e.preventDefault()
+            startDrag(item)
+          }}
+        >
+          <div className='h-2 w-2 rounded-full bg-gray-800' />
+        </a>
+        <SuperInput item={item} i={i} allItems={allItems} />
+      </div>
+      {!item.collapsed && <List items={item.children} allItems={allItems} />}
+    </li>
+  )
+}
+
+interface SuperInputProps {
+  item: Item
+  i: number
+  allItems: ItemMap
+}
+
+function SuperInput ({ item, i, allItems }: SuperInputProps) {
   const fetcher = useFetcher()
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
     // indent item
@@ -418,7 +507,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
           )
         }}
         type='text'
-        className={cx('w-full py-1 outline-none', {
+        className={cx('w-full bg-transparent py-1 outline-none', {
           'text-gray-400 line-through': item.completed
         })}
         name='title'
@@ -435,7 +524,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
         }}
         type='text'
         className={cx(
-          '!w-full text-xs text-gray-400 outline-none focus:not-sr-only',
+          '!w-full bg-transparent text-xs text-gray-400 outline-none focus:not-sr-only',
           { 'sr-only': !item.body }
         )}
         defaultValue={item.body}
