@@ -524,8 +524,8 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
         }}
         type='text'
         className={cx(
-          '!w-full bg-transparent text-xs text-gray-400 outline-none focus:not-sr-only',
-          { 'sr-only': !item.body }
+          'bg-transparent text-xs text-gray-400 outline-none focus:not-sr-only focus:w-full',
+          { 'sr-only': !item.body, 'w-full': item.body }
         )}
         defaultValue={item.body}
       />
