@@ -393,22 +393,25 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // create new item
     if (e.key === 'Enter') {
       e.preventDefault()
-      const title = e.target.value.slice(e.target.selectionStart)
+      // But first check if you should just indent.
       if(item.title === '' && item.body === '') {
-        return fetcher.submit(
-          { _action: 'outdent', id: item.id },
-          { method: 'post' }
-        )
+        if (item.parentId && (item.order == allItems?.[item?.parentId]?.children?.length - 1 || allItems?.[item?.parentId]?.children?.length == 1)) {
+          return fetcher.submit(
+            { _action: 'outdent', id: item.id },
+            { method: 'post' }
+            )
+          }
       }
-      return fetcher.submit(
-        {
-          _action: 'addItem',
-          id: item.parentId,
-          position: i,
-          title
-        },
-        { method: 'post' }
-      )
+      const title = e.target.value.slice(e.target.selectionStart)
+      const args = {
+        _action: 'addItem',
+        position: i,
+        title
+      }
+      if (item.parentId) {
+        args.id = item.parentId
+      }
+      return fetcher.submit(args, { method: 'post' })
     }
 
     // delete item
