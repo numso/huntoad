@@ -267,7 +267,7 @@ function List ({ items, root, rootId, allItems }: ListProps) {
             <input type='hidden' name='title' value='' />
             <button
               type='submit'
-              className='flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300'
+              className='flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300 dark:hover:bg-gray-600'
             >
               +
             </button>
@@ -300,7 +300,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
           <input type='hidden' name='completed' value={'' + !item.completed} />
           <button
             type='submit'
-            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
+            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 dark:hover:bg-gray-600 group-hover:opacity-100'
           >
             {item.completed ? (
               <Icons.Undo className='h-3 w-3' />
@@ -315,7 +315,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
           <input type='hidden' name='collapsed' value={'' + !item.collapsed} />
           <button
             type='submit'
-            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100'
+            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 dark:hover:bg-gray-600  group-hover:opacity-100'
           >
             <Icons.ChevronRight
               className={cx('h-3 w-3 transition-all', {
@@ -330,15 +330,15 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
           data-childcount={item.children.length}
           href={`/list?id=${item.id}`}
           className={cx(
-            'dz flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400',
-            { 'bg-gray-300': item.collapsed }
+            'dz flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400 dark:hover:bg-gray-600',
+            { 'bg-gray-300 dark:bg-gray-500': item.collapsed }
           )}
           onMouseDown={e => {
             e.preventDefault()
             startDrag(item)
           }}
         >
-          <div className='h-2 w-2 rounded-full bg-gray-800' />
+          <div className='h-2 w-2 rounded-full bg-gray-800 dark:bg-white' />
         </a>
         <SuperInput item={item} i={i} allItems={allItems} />
       </div>
