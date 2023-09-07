@@ -394,6 +394,12 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     if (e.key === 'Enter') {
       e.preventDefault()
       const title = e.target.value.slice(e.target.selectionStart)
+      if(item.title === '' && item.body === '') {
+        return fetcher.submit(
+          { _action: 'outdent', id: item.id },
+          { method: 'post' }
+        )
+      }
       return fetcher.submit(
         {
           _action: 'addItem',
