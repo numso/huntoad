@@ -290,7 +290,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
       key={item.id}
       data-dragging={item === dragItem}
       className={cx('-ml-6 transition-all', {
-        'bg-gray-200': item === dragItem
+        'bg-gray-200 dark:bg-gray-600': item === dragItem
       })}
     >
       <div className='group flex items-center gap-2'>
