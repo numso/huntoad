@@ -31,6 +31,7 @@ export async function loadItems (): Promise<Item[]> {
 
 function decode (raw: string, file: string): Item {
   const formatted = fm<FrontMatterObject>(raw)
+  if (!formatted.attributes.tags) formatted.attributes.tags = []
   return {
     ...formatted.attributes,
     body: formatted.body,
