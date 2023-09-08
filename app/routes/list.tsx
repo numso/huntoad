@@ -251,6 +251,7 @@ interface ListProps {
 }
 
 function List ({ items, root, rootId, allItems }: ListProps) {
+  const [, focusAfterMount] = useFocuser('--')
   return (
     <ul className={cx('ml-16', { 'border-l': !root })}>
       {items.map((item, i) => (
@@ -265,6 +266,7 @@ function List ({ items, root, rootId, allItems }: ListProps) {
             <input type='hidden' name='title' value='' />
             <button
               type='submit'
+              onClick={() => focusAfterMount('new', 'start')}
               className='flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300 dark:hover:bg-gray-600'
             >
               +
@@ -411,7 +413,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
           _action: 'addItem',
           position: i,
           title,
-          id: item.parentId
+          id: item.parentId || ''
         },
         { method: 'post' }
       )

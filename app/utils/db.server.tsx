@@ -81,9 +81,10 @@ export async function setCollapsed (id: string, collapsed: boolean) {
 }
 
 export async function addItem (parentId: string | null, position: number, title: string) {
+  if (!parentId) parentId = null
   const items = await loadItems()
   const newItem = { id: uuid.v4(), parentId, title }
-  const siblings = items.filter(i => i.parentId === parentId)
+  const siblings = items.filter(i => i.parentId == parentId)
   const sibling = siblings[position]
   const siblingChildren = sibling ? items.filter(i => i.parentId === sibling.id) : []
 
