@@ -114,10 +114,11 @@ export async function moveItem (
   direction: string
 ) {
   if (dragId === dropId) return
-
   const items = await loadItems()
   const dragItem = items.find(i => i.id == dragId)
   const dropItem = items.find(i => i.id == dropId)
+  if (!dragItem || !dropItem) return
+
   const siblings = items.filter(i => i.parentId == dragItem.parentId)
   const dragIndex = siblings.findIndex(i => i.id == dragId)
   siblings.splice(dragIndex, 1)

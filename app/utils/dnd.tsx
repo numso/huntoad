@@ -1,17 +1,22 @@
 import React from 'react'
 
-interface DndContext {
-  setDragging: Function
-  dragging: any
-}
+import type { Item } from './db.server'
 
-const context = React.createContext<DndContext>({})
+type State = [string, string] | null
+type _Item = Item | null
+interface DndContext {
+  startDrag: (value: _Item) => void
+  dragItem: _Item
+}
+type _DndContext = DndContext | null
+
+const context = React.createContext<_DndContext>(null)
 
 interface DnDContextProps {
   children: React.ReactNode
-  onMove: Function
-  onDrop: Function
-  onCancel: Function
+  onMove: (e: MouseEvent) => State
+  onDrop: (e: MouseEvent, state: State, dragging: Item) => void
+  onCancel: () => void
 }
 
 export function DndContext ({
@@ -19,13 +24,13 @@ export function DndContext ({
   onMove,
   onDrop,
   onCancel
-}: DnDContextProps) {
-  const [dragging, setDragging] = React.useState(null)
-  const dragRef = React.useRef({ dragging: null })
-  dragRef.current.dragging = dragging
+}: DnDContextProps): React.ReactNode {
+  const [dragging, setDragging] = React.useState<_Item>(null)
+  const dragRef = React.useRef<_Item>(null)
+  dragRef.current = dragging
 
   React.useEffect(() => {
-    let state: any
+    let state: State
     function handleKeydown (e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setDragging(null)
@@ -34,12 +39,12 @@ export function DndContext ({
       }
     }
     function handleMousemove (e: MouseEvent) {
-      if (!dragRef.current.dragging) return
+      if (!dragRef.current) return
       state = onMove(e)
     }
     function handleMouseup (e: MouseEvent) {
-      if (!dragRef.current.dragging) return
-      onDrop(e, state, dragRef.current.dragging)
+      if (!dragRef.current) return
+      onDrop(e, state, dragRef.current)
       setDragging(null)
       state = null
     }
@@ -54,13 +59,12 @@ export function DndContext ({
     }
   }, [])
   return (
-    <context.Provider value={{ dragging, setDragging }}>
+    <context.Provider value={{ startDrag: setDragging, dragItem: dragging }}>
       {children}
     </context.Provider>
   )
 }
 
-export function useDragger () {
-  const { dragging, setDragging } = React.useContext(context)
-  return [setDragging, dragging]
+export function useDragger (): _DndContext {
+  return React.useContext(context)
 }

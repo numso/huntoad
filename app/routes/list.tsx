@@ -52,36 +52,54 @@ export async function loader ({ request }: LoaderArgs) {
 }
 
 export async function action ({ context, params, request }: ActionArgs) {
-  const body = await request.formData()
+  const form = await request.formData()
   const url = new URL(request.url)
 
-  switch (body.get('_action')) {
+  switch (form.get('_action')) {
     case 'updateTitle': {
-      await db.updateTitle(body.get('id'), body.get('title'))
+      const id = form.get('id')
+      const title = form.get('title')
+      if (typeof id !== 'string' || typeof title !== 'string') return
+      await db.updateTitle(id, title)
       break
     }
     case 'updateBody': {
-      await db.updateBody(body.get('id'), body.get('body'))
+      const id = form.get('id')
+      const body = form.get('body')
+      if (typeof id !== 'string' || typeof body !== 'string') return
+      await db.updateBody(id, body)
       break
     }
     case 'addItem': {
-      await db.addItem(
-        body.get('id') || undefined,
-        +body.get('position'),
-        body.get('title')
+      const id = form.get('id')
+      const position = form.get('position')
+      const title = form.get('title')
+      if (
+        typeof id !== 'string' ||
+        typeof position !== 'string' ||
+        typeof title !== 'string'
       )
+        return
+      await db.addItem(id, +position, title)
       break
     }
     case 'moveItem': {
-      await db.moveItem(
-        body.get('dragId'),
-        body.get('dropId'),
-        body.get('direction')
+      const dragId = form.get('dragId')
+      const dropId = form.get('dropId')
+      const direction = form.get('direction')
+      if (
+        typeof dragId !== 'string' ||
+        typeof dropId !== 'string' ||
+        typeof direction !== 'string'
       )
+        return
+      await db.moveItem(dragId, dropId, direction)
       break
     }
     case 'deleteItem': {
-      await db.deleteItem(body.get('id'))
+      const id = form.get('id')
+      if (typeof id !== 'string') return
+      await db.deleteItem(id)
       break
     }
     case 'share': {
@@ -90,20 +108,28 @@ export async function action ({ context, params, request }: ActionArgs) {
       return json({ steris })
     }
     case 'setCompleted': {
-      await db.setCompleted(body.get('id'), body.get('completed') === 'true')
+      const id = form.get('id')
+      if (typeof id !== 'string') return
+      await db.setCompleted(id, form.get('completed') === 'true')
       break
     }
     case 'setCollapsed': {
-      await db.setCollapsed(body.get('id'), body.get('collapsed') === 'true')
+      const id = form.get('id')
+      if (typeof id !== 'string') return
+      await db.setCollapsed(id, form.get('collapsed') === 'true')
       break
     }
     case 'indent': {
-      await db.indent(body.get('id'))
+      const id = form.get('id')
+      if (typeof id !== 'string') return
+      await db.indent(id)
       break
     }
     case 'outdent': {
-      const id = url.searchParams.get('id')
-      await db.outdent(body.get('id'), id)
+      const id = form.get('id')
+      if (typeof id !== 'string') return
+      const parentId = url.searchParams.get('id')
+      await db.outdent(id, parentId)
       break
     }
   }
@@ -125,16 +151,23 @@ function buildIdMap (items: Item[], obj: ItemMap) {
 function findSuitableDroparea (
   x: number,
   y: number
-): [Element, string, string] | null {
+): [HTMLAnchorElement, string, string] | null {
   const dragZone = document.querySelector('[data-dragging=true]')
-  const zones = [...document.querySelectorAll('.dz')].reverse()
-  const zone = zones.find(el => y > el.offsetTop)
-  if (!zone) return [zones.at(-1), zones.at(-1).dataset.id, 'above']
+  if (!dragZone) return null
+  const zones = [
+    ...document.querySelectorAll<HTMLAnchorElement>('.dz')
+  ].reverse()
+  let zone = zones.find(el => y > el.offsetTop)
+  if (!zone) {
+    zone = zones.at(-1)
+    if (!zone) return null
+    return [zone, zone.dataset.id || '', 'above']
+  }
   if (dragZone.contains(zone)) return null
   if (zone.dataset.collapsed === 'true') return null
   return [
     zone,
-    zone.dataset.id,
+    zone.dataset.id || '',
     window.scrollX + zone.offsetLeft + 50 > x && zone.dataset.childcount === '0'
       ? 'below'
       : 'child'
@@ -287,7 +320,9 @@ interface ListItemProps {
   allItems: ItemMap
 }
 function ListItem ({ item, i, allItems }: ListItemProps) {
-  const [startDrag, dragItem] = useDragger()
+  const ctx = useDragger()
+  if (!ctx) return null
+  const { startDrag, dragItem } = ctx
   return (
     <li
       key={item.id}
@@ -360,6 +395,8 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
   const fetcher = useFetcher()
   const [focus, focusAfterMount] = useFocuser(item.id)
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
+    const input = e.currentTarget
+
     // indent item
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault()
@@ -393,7 +430,6 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     if (e.shiftKey && e.key === 'Enter') {
       e.preventDefault()
       focus(item.id, 'start', 'body')
-      document.getElementById(`body-${item.id}`)?.focus()
       return
     }
 
@@ -414,22 +450,23 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
           )
         }
       }
-      const title = e.target.value.slice(e.target.selectionStart)
-      const args = {
-        _action: 'addItem',
-        position: i,
-        title
-      }
-      if (item.parentId) {
-        args.id = item.parentId
-      }
-      focusAfterMount('new')
-      return fetcher.submit(args, { method: 'post' })
+      const title = input.value.slice(input.selectionStart || 0)
+
+      focusAfterMount('new', 'start')
+      return fetcher.submit(
+        {
+          _action: 'addItem',
+          position: i,
+          title,
+          id: item.parentId
+        },
+        { method: 'post' }
+      )
     }
 
     // delete item
     if (e.key === 'Backspace') {
-      if (e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
+      if (input.selectionStart === 0 && input.selectionEnd === 0) {
         e.preventDefault()
         const prevItem = getPrevItem(item, allItems)
         focus(prevItem?.id, 'end')
@@ -444,7 +481,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // move cursor up
     if (
       e.key === 'ArrowUp' ||
-      (e.key === 'ArrowLeft' && e.target.selectionStart === 0)
+      (e.key === 'ArrowLeft' && input.selectionStart === 0)
     ) {
       e.preventDefault()
       const prevItem = getPrevItem(item, allItems)
@@ -455,17 +492,18 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // move cursor down
     if (
       e.key === 'ArrowDown' ||
-      (e.key === 'ArrowRight' &&
-        e.target.selectionStart === e.target.value.length)
+      (e.key === 'ArrowRight' && input.selectionStart === input.value.length)
     ) {
       e.preventDefault()
       const nextItem = getNextItem(item, allItems, true)
-      focus(nextItem?.id)
+      focus(nextItem?.id, 'start')
       return
     }
   }
 
   function handleBodyKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
+    const input = e.currentTarget
+
     // mark item as complete / not complete
     if (e.metaKey && e.key === 'Enter') {
       e.preventDefault()
@@ -478,11 +516,11 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // exit note mode
     if (e.shiftKey && e.key === 'Enter') {
       e.preventDefault()
-      focus(item.id)
+      focus(item.id, 'start')
     }
 
     // exit note mode
-    if (e.key === 'Backspace' && e.target.value === '') {
+    if (e.key === 'Backspace' && input.value === '') {
       e.preventDefault()
       focus(item.id, 'end')
     }
@@ -490,7 +528,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // move cursor up
     if (
       (e.key === 'ArrowUp' || e.key === 'ArrowLeft') &&
-      e.target.selectionStart === 0
+      input.selectionStart === 0
     ) {
       e.preventDefault()
       focus(item.id, e.key === 'ArrowLeft' ? 'end' : 'start')
@@ -499,11 +537,11 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // move cursor down
     if (
       (e.key === 'ArrowDown' || e.key === 'ArrowRight') &&
-      e.target.selectionStart === e.target.value.length
+      input.selectionStart === input.value.length
     ) {
       e.preventDefault()
       const nextItem = getNextItem(item, allItems, true)
-      focus(nextItem?.id)
+      focus(nextItem?.id, 'start')
     }
   }
   return (
