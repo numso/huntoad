@@ -182,7 +182,8 @@ export default function Index () {
           const [el, id, direction] = droparea
           const dropzone = document.getElementById('dropzone')
           if (dropzone) {
-            dropzone.style.top = el.offsetTop + (direction === 'above' ? -8 : 25) + 'px'
+            const note = el.dataset.hasnotes === 'true'
+            dropzone.style.top = el.offsetTop + (direction === 'above' ? -8 : note ? 50 : 25) + 'px'
             dropzone.style.left = el.offsetLeft + (direction === 'child' ? 50 : 10) + 'px'
             dropzone.style.width = '400px'
           }
@@ -295,14 +296,14 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
         'bg-gray-200 dark:bg-gray-600': item === dragItem
       })}
     >
-      <div className='group flex items-center gap-2'>
+      <div className='group flex gap-2'>
         <Form method='POST'>
           <input type='hidden' name='_action' value='setCompleted' />
           <input type='hidden' name='id' value={item.id} />
           <input type='hidden' name='completed' value={'' + !item.completed} />
           <button
             type='submit'
-            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100 dark:hover:bg-gray-600'
+            className='mt-1.5 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100 dark:hover:bg-gray-600'
           >
             {item.completed ? (
               <Icons.Undo className='h-3 w-3' />
@@ -317,7 +318,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
           <input type='hidden' name='collapsed' value={'' + !item.collapsed} />
           <button
             type='submit'
-            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100  dark:hover:bg-gray-600'
+            className='mt-1.5 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100  dark:hover:bg-gray-600'
           >
             <Icons.ChevronRight
               className={cx('h-3 w-3 transition-all', {
@@ -329,10 +330,11 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
         <a
           data-id={item.id}
           data-collapsed={item.collapsed}
+          data-hasnotes={!!item.body.length}
           data-childcount={item.children.length}
           href={`/list?id=${item.id}`}
           className={cx(
-            'dz flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400 dark:hover:bg-gray-600',
+            'dz mt-1.5 flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400 dark:hover:bg-gray-600',
             { 'bg-gray-300 dark:bg-gray-500': item.collapsed }
           )}
           onMouseDown={e => {
