@@ -115,7 +115,6 @@ export async function moveItem (
 ) {
   if (dragId === dropId) return
 
-  console.log({ dragId, dropId, direction })
   const items = await loadItems()
   const dragItem = items.find(i => i.id == dragId)
   const dropItem = items.find(i => i.id == dropId)

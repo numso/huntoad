@@ -300,7 +300,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
           <input type='hidden' name='completed' value={'' + !item.completed} />
           <button
             type='submit'
-            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 dark:hover:bg-gray-600 group-hover:opacity-100'
+            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100 dark:hover:bg-gray-600'
           >
             {item.completed ? (
               <Icons.Undo className='h-3 w-3' />
@@ -315,7 +315,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
           <input type='hidden' name='collapsed' value={'' + !item.collapsed} />
           <button
             type='submit'
-            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 dark:hover:bg-gray-600  group-hover:opacity-100'
+            className='flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100  dark:hover:bg-gray-600'
           >
             <Icons.ChevronRight
               className={cx('h-3 w-3 transition-all', {
@@ -394,8 +394,12 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     if (e.key === 'Enter') {
       e.preventDefault()
       // But first check if you should just indent.
-      if(item.title === '' && item.body === '') {
-        if (item.parentId && (item.order == allItems?.[item?.parentId]?.children?.length - 1 || allItems?.[item?.parentId]?.children?.length == 1)) {
+      if (item.title === '' && item.body === '') {
+        if (
+          item.parentId &&
+          (item.order == allItems?.[item?.parentId]?.children?.length - 1 ||
+            allItems?.[item?.parentId]?.children?.length == 1)
+        ) {
           return fetcher.submit(
             { _action: 'outdent', id: item.id },
             { method: 'post' }
