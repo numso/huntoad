@@ -119,21 +119,21 @@ export async function moveItem (dragId: string, dropId: string, direction: strin
   const siblings = items.filter(i => i.parentId == dragItem.parentId)
   const dragIndex = siblings.findIndex(i => i.id == dragId)
   siblings.splice(dragIndex, 1)
-  reorder(siblings)
+  await reorder(siblings)
   dragItem.parentId = 'TEMP'
 
   if (direction === 'child') {
     const newSiblings = items.filter(i => i.parentId == dropItem.id)
     newSiblings.unshift(dragItem)
     dragItem.parentId = dropItem.id
-    reorder(newSiblings)
+    await reorder(newSiblings)
   } else {
     const newSiblings = items.filter(i => i.parentId == dropItem.parentId)
     const dropIndex = newSiblings.findIndex(i => i.id == dropId)
     const index = direction == 'above' ? dropIndex : dropIndex + 1
     newSiblings.splice(index, 0, dragItem)
     dragItem.parentId = dropItem.parentId
-    reorder(newSiblings)
+    await reorder(newSiblings)
   }
 }
 
