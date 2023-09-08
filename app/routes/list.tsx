@@ -143,11 +143,13 @@ function findSuitableDroparea (x: number, y: number): [HTMLAnchorElement, string
     return [zone, zone.dataset.id || '', 'above']
   }
   if (dragZone.contains(zone)) return null
-  if (zone.dataset.collapsed === 'true') return null
+  const hoveringLeft = window.scrollX + zone.offsetLeft + 50 > x
+  const hasChildren = zone.dataset.childcount !== '0'
+  const collapsed = zone.dataset.collapsed === 'true'
   return [
     zone,
     zone.dataset.id || '',
-    window.scrollX + zone.offsetLeft + 50 > x && zone.dataset.childcount === '0' ? 'below' : 'child'
+    (hoveringLeft && (!hasChildren || collapsed)) || (hasChildren && collapsed) ? 'below' : 'child'
   ]
 }
 
