@@ -1,11 +1,6 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import {
-  Form,
-  useFetcher,
-  useLoaderData,
-  useSearchParams
-} from '@remix-run/react'
+import { Form, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
 
@@ -23,10 +18,7 @@ interface Breadcrumb {
 function getBreadcrumbs (items: Item[], id: string | null): Breadcrumb[] {
   const item = items.find(item => item.id == id)
   if (!item) return []
-  return [
-    ...getBreadcrumbs(items, item.parentId),
-    { id: item.id, label: item.title }
-  ]
+  return [...getBreadcrumbs(items, item.parentId), { id: item.id, label: item.title }]
 }
 
 function populateChildren (items: Item[], allItems: Item[]): Item[] {
@@ -74,11 +66,7 @@ export async function action ({ context, params, request }: ActionArgs) {
       const id = form.get('id')
       const position = form.get('position')
       const title = form.get('title')
-      if (
-        typeof id !== 'string' ||
-        typeof position !== 'string' ||
-        typeof title !== 'string'
-      )
+      if (typeof id !== 'string' || typeof position !== 'string' || typeof title !== 'string')
         return
       await db.addItem(id, +position, title)
       break
@@ -87,11 +75,7 @@ export async function action ({ context, params, request }: ActionArgs) {
       const dragId = form.get('dragId')
       const dropId = form.get('dropId')
       const direction = form.get('direction')
-      if (
-        typeof dragId !== 'string' ||
-        typeof dropId !== 'string' ||
-        typeof direction !== 'string'
-      )
+      if (typeof dragId !== 'string' || typeof dropId !== 'string' || typeof direction !== 'string')
         return
       await db.moveItem(dragId, dropId, direction)
       break
@@ -148,15 +132,10 @@ function buildIdMap (items: Item[], obj: ItemMap) {
   }
 }
 
-function findSuitableDroparea (
-  x: number,
-  y: number
-): [HTMLAnchorElement, string, string] | null {
+function findSuitableDroparea (x: number, y: number): [HTMLAnchorElement, string, string] | null {
   const dragZone = document.querySelector('[data-dragging=true]')
   if (!dragZone) return null
-  const zones = [
-    ...document.querySelectorAll<HTMLAnchorElement>('.dz')
-  ].reverse()
+  const zones = [...document.querySelectorAll<HTMLAnchorElement>('.dz')].reverse()
   let zone = zones.find(el => y > el.offsetTop)
   if (!zone) {
     zone = zones.at(-1)
@@ -168,9 +147,7 @@ function findSuitableDroparea (
   return [
     zone,
     zone.dataset.id || '',
-    window.scrollX + zone.offsetLeft + 50 > x && zone.dataset.childcount === '0'
-      ? 'below'
-      : 'child'
+    window.scrollX + zone.offsetLeft + 50 > x && zone.dataset.childcount === '0' ? 'below' : 'child'
   ]
 }
 
@@ -205,10 +182,8 @@ export default function Index () {
           const [el, id, direction] = droparea
           const dropzone = document.getElementById('dropzone')
           if (dropzone) {
-            dropzone.style.top =
-              el.offsetTop + (direction === 'above' ? -8 : 25) + 'px'
-            dropzone.style.left =
-              el.offsetLeft + (direction === 'child' ? 50 : 10) + 'px'
+            dropzone.style.top = el.offsetTop + (direction === 'above' ? -8 : 25) + 'px'
+            dropzone.style.left = el.offsetLeft + (direction === 'child' ? 50 : 10) + 'px'
             dropzone.style.width = '400px'
           }
           return [id, direction]
@@ -232,10 +207,7 @@ export default function Index () {
           if (dropzone) dropzone.style.top = '-10px'
         }}
       >
-        <div
-          id='dropzone'
-          className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500'
-        />
+        <div id='dropzone' className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500' />
         <div className='p-4'>
           {!!breadcrumbs.length && (
             <ul className='group flex pb-4'>
@@ -248,10 +220,7 @@ export default function Index () {
                 <React.Fragment key={crumb.id}>
                   <li className='px-4 text-gray-300'>/</li>
                   <li>
-                    <a
-                      className='hover:text-blue-500'
-                      href={`/list?id=${crumb.id}`}
-                    >
+                    <a className='hover:text-blue-500' href={`/list?id=${crumb.id}`}>
                       {crumb.label}
                     </a>
                   </li>
@@ -260,21 +229,14 @@ export default function Index () {
               <li className='ml-10'>
                 <button
                   className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
-                  onClick={() =>
-                    fetcher.submit({ _action: 'share' }, { method: 'post' })
-                  }
+                  onClick={() => fetcher.submit({ _action: 'share' }, { method: 'post' })}
                 >
                   share
                 </button>
               </li>
             </ul>
           )}
-          <List
-            items={items}
-            allItems={allItems}
-            root
-            rootId={searchParams.get('id') || ''}
-          />
+          <List items={items} allItems={allItems} root rootId={searchParams.get('id') || ''} />
         </div>
       </DndContext>
     </FocusManager>
@@ -401,20 +363,14 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault()
       focusAfterMount(item.id, 'current')
-      return fetcher.submit(
-        { _action: 'indent', id: item.id },
-        { method: 'post' }
-      )
+      return fetcher.submit({ _action: 'indent', id: item.id }, { method: 'post' })
     }
 
     // outdent item
     if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault()
       focusAfterMount(item.id, 'current')
-      return fetcher.submit(
-        { _action: 'outdent', id: item.id },
-        { method: 'post' }
-      )
+      return fetcher.submit({ _action: 'outdent', id: item.id }, { method: 'post' })
     }
 
     // mark item as complete / not complete
@@ -444,10 +400,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
             allItems?.[item?.parentId]?.children?.length == 1)
         ) {
           focusAfterMount(item.id, 'current')
-          return fetcher.submit(
-            { _action: 'outdent', id: item.id },
-            { method: 'post' }
-          )
+          return fetcher.submit({ _action: 'outdent', id: item.id }, { method: 'post' })
         }
       }
       const title = input.value.slice(input.selectionStart || 0)
@@ -470,19 +423,13 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
         e.preventDefault()
         const prevItem = getPrevItem(item, allItems)
         focus(prevItem?.id, 'end')
-        fetcher.submit(
-          { _action: 'deleteItem', id: item.id },
-          { method: 'post' }
-        )
+        fetcher.submit({ _action: 'deleteItem', id: item.id }, { method: 'post' })
         return
       }
     }
 
     // move cursor up
-    if (
-      e.key === 'ArrowUp' ||
-      (e.key === 'ArrowLeft' && input.selectionStart === 0)
-    ) {
+    if (e.key === 'ArrowUp' || (e.key === 'ArrowLeft' && input.selectionStart === 0)) {
       e.preventDefault()
       const prevItem = getPrevItem(item, allItems)
       focus(prevItem?.id, e.key === 'ArrowLeft' ? 'end' : 'start')
@@ -526,10 +473,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     }
 
     // move cursor up
-    if (
-      (e.key === 'ArrowUp' || e.key === 'ArrowLeft') &&
-      input.selectionStart === 0
-    ) {
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && input.selectionStart === 0) {
       e.preventDefault()
       focus(item.id, e.key === 'ArrowLeft' ? 'end' : 'start')
     }

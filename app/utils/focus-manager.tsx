@@ -10,8 +10,7 @@ type _HTMLInputElement = HTMLInputElement | undefined
 type _FocusDetails = FocusDetails | null
 type _string = string | undefined
 
-const context =
-  React.createContext<React.MutableRefObject<_FocusDetails> | null>(null)
+const context = React.createContext<React.MutableRefObject<_FocusDetails> | null>(null)
 
 interface FocusManagerProps {
   children: React.ReactNode
@@ -50,10 +49,7 @@ export function useFocuser (id: string) {
   return [focus, focusAfterMount]
 }
 
-function getPosition (
-  position: Position,
-  elementOrKey: string | HTMLInputElement
-): number {
+function getPosition (position: Position, elementOrKey: string | HTMLInputElement): number {
   if (position === 'start') return 0
   if (typeof position == 'number') return position
 

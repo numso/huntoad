@@ -80,18 +80,12 @@ export async function setCollapsed (id: string, collapsed: boolean) {
   await fs.writeFile(p, newContents)
 }
 
-export async function addItem (
-  parentId: string | null,
-  position: number,
-  title: string
-) {
+export async function addItem (parentId: string | null, position: number, title: string) {
   const items = await loadItems()
   const newItem = { id: uuid.v4(), parentId, title }
   const siblings = items.filter(i => i.parentId === parentId)
   const sibling = siblings[position]
-  const siblingChildren = sibling
-    ? items.filter(i => i.parentId === sibling.id)
-    : []
+  const siblingChildren = sibling ? items.filter(i => i.parentId === sibling.id) : []
 
   if (siblingChildren.length && !sibling.collapsed && !title) {
     newItem.parentId = sibling.id
@@ -108,11 +102,7 @@ export async function addItem (
   }
 }
 
-export async function moveItem (
-  dragId: string,
-  dropId: string,
-  direction: string
-) {
+export async function moveItem (dragId: string, dropId: string, direction: string) {
   if (dragId === dropId) return
   const items = await loadItems()
   const dragItem = items.find(i => i.id == dragId)
@@ -161,9 +151,7 @@ export async function deleteItem (id: string) {
 
 async function doDeleteItem (item: Item, items: Item[]) {
   await fs.rm(`./data/${item.id}.md`)
-  const children = items.filter(
-    i => i.parentId === item.parentId && i.id !== item.id
-  )
+  const children = items.filter(i => i.parentId === item.parentId && i.id !== item.id)
   await reorder(children)
 }
 
@@ -192,10 +180,7 @@ export async function indent (id: string): Promise<void> {
   await reorder(newSiblings)
 }
 
-export async function outdent (
-  id: string,
-  rootId: string | null
-): Promise<void> {
+export async function outdent (id: string, rootId: string | null): Promise<void> {
   const items = await loadItems()
   const item = items.find(i => i.id == id)
   if (!item || item.parentId == rootId) return
@@ -233,19 +218,14 @@ function toSteris (item: Item, indent: string): string {
   const children = item.children.map(i => toSteris(i, indent + '  '))
   const collapse = item.collapsed ? '<' : '>'
   const complete = item.completed ? 'x' : ' '
-  return [
-    `${indent}${collapse} [${complete}] ${item.title || ''}`,
-    ...children
-  ].join('\n')
+  return [`${indent}${collapse} [${complete}] ${item.title || ''}`, ...children].join('\n')
 }
 
 interface StringKeyMap {
   [key: string]: string | string[] | boolean | number | null
 }
 
-function writeFrontMatter (
-  attributes: FrontMatterObject | StringKeyMap
-): string {
+function writeFrontMatter (attributes: FrontMatterObject | StringKeyMap): string {
   const strings = []
   for (const key in attributes) {
     const value = attributes[key]
@@ -258,8 +238,7 @@ function writeFrontMatter (
 function formatValue (value: string | string[] | boolean | number): string {
   if (typeof value == 'boolean') return '' + value
   if (typeof value == 'number') return '' + value
-  if (typeof value == 'string')
-    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  if (typeof value == 'string') return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
   if (Array.isArray(value)) {
     return ['', ...value.map(tag => `  - ${tag}`)].join('\n')
   }
