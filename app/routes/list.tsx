@@ -12,6 +12,7 @@ import React from 'react'
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
 import { DndContext, useDragger } from '../utils/dnd'
+import { FocusManager, useFocuser } from '../utils/focus-manager'
 import * as Icons from '../utils/icons'
 
 interface Breadcrumb {
@@ -156,92 +157,94 @@ export default function Index () {
   }, [fetcher.data])
 
   return (
-    <DndContext
-      onMove={e => {
-        const droparea = findSuitableDroparea(
-          window.scrollX + e.clientX,
-          window.scrollY + e.clientY
-        )
-        if (!droparea) {
+    <FocusManager>
+      <DndContext
+        onMove={e => {
+          const droparea = findSuitableDroparea(
+            window.scrollX + e.clientX,
+            window.scrollY + e.clientY
+          )
+          if (!droparea) {
+            const dropzone = document.getElementById('dropzone')
+            if (dropzone) dropzone.style.top = '-10px'
+            return null
+          }
+          const [el, id, direction] = droparea
+          const dropzone = document.getElementById('dropzone')
+          if (dropzone) {
+            dropzone.style.top =
+              el.offsetTop + (direction === 'above' ? -8 : 25) + 'px'
+            dropzone.style.left =
+              el.offsetLeft + (direction === 'child' ? 50 : 10) + 'px'
+            dropzone.style.width = '400px'
+          }
+          return [id, direction]
+        }}
+        onDrop={(e, state, dragItem) => {
+          if (!state) return
           const dropzone = document.getElementById('dropzone')
           if (dropzone) dropzone.style.top = '-10px'
-          return null
-        }
-        const [el, id, direction] = droparea
-        const dropzone = document.getElementById('dropzone')
-        if (dropzone) {
-          dropzone.style.top =
-            el.offsetTop + (direction === 'above' ? -8 : 25) + 'px'
-          dropzone.style.left =
-            el.offsetLeft + (direction === 'child' ? 50 : 10) + 'px'
-          dropzone.style.width = '400px'
-        }
-        return [id, direction]
-      }}
-      onDrop={(e, state, dragItem) => {
-        if (!state) return
-        const dropzone = document.getElementById('dropzone')
-        if (dropzone) dropzone.style.top = '-10px'
-        fetcher.submit(
-          {
-            _action: 'moveItem',
-            dragId: dragItem.id,
-            dropId: state[0],
-            direction: state[1]
-          },
-          { method: 'post' }
-        )
-      }}
-      onCancel={() => {
-        const dropzone = document.getElementById('dropzone')
-        if (dropzone) dropzone.style.top = '-10px'
-      }}
-    >
-      <div
-        id='dropzone'
-        className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500'
-      />
-      <div className='p-4'>
-        {!!breadcrumbs.length && (
-          <ul className='group flex pb-4'>
-            <li>
-              <a className='hover:text-blue-500' href='/list'>
-                @
-              </a>
-            </li>
-            {breadcrumbs.map(crumb => (
-              <React.Fragment key={crumb.id}>
-                <li className='px-4 text-gray-300'>/</li>
-                <li>
-                  <a
-                    className='hover:text-blue-500'
-                    href={`/list?id=${crumb.id}`}
-                  >
-                    {crumb.label}
-                  </a>
-                </li>
-              </React.Fragment>
-            ))}
-            <li className='ml-10'>
-              <button
-                className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
-                onClick={() =>
-                  fetcher.submit({ _action: 'share' }, { method: 'post' })
-                }
-              >
-                share
-              </button>
-            </li>
-          </ul>
-        )}
-        <List
-          items={items}
-          allItems={allItems}
-          root
-          rootId={searchParams.get('id') || ''}
+          fetcher.submit(
+            {
+              _action: 'moveItem',
+              dragId: dragItem.id,
+              dropId: state[0],
+              direction: state[1]
+            },
+            { method: 'post' }
+          )
+        }}
+        onCancel={() => {
+          const dropzone = document.getElementById('dropzone')
+          if (dropzone) dropzone.style.top = '-10px'
+        }}
+      >
+        <div
+          id='dropzone'
+          className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500'
         />
-      </div>
-    </DndContext>
+        <div className='p-4'>
+          {!!breadcrumbs.length && (
+            <ul className='group flex pb-4'>
+              <li>
+                <a className='hover:text-blue-500' href='/list'>
+                  @
+                </a>
+              </li>
+              {breadcrumbs.map(crumb => (
+                <React.Fragment key={crumb.id}>
+                  <li className='px-4 text-gray-300'>/</li>
+                  <li>
+                    <a
+                      className='hover:text-blue-500'
+                      href={`/list?id=${crumb.id}`}
+                    >
+                      {crumb.label}
+                    </a>
+                  </li>
+                </React.Fragment>
+              ))}
+              <li className='ml-10'>
+                <button
+                  className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
+                  onClick={() =>
+                    fetcher.submit({ _action: 'share' }, { method: 'post' })
+                  }
+                >
+                  share
+                </button>
+              </li>
+            </ul>
+          )}
+          <List
+            items={items}
+            allItems={allItems}
+            root
+            rootId={searchParams.get('id') || ''}
+          />
+        </div>
+      </DndContext>
+    </FocusManager>
   )
 }
 
@@ -355,10 +358,12 @@ interface SuperInputProps {
 
 function SuperInput ({ item, i, allItems }: SuperInputProps) {
   const fetcher = useFetcher()
+  const [focus, focusAfterMount] = useFocuser(item.id)
   function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
     // indent item
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault()
+      focusAfterMount(item.id, 'current')
       return fetcher.submit(
         { _action: 'indent', id: item.id },
         { method: 'post' }
@@ -368,6 +373,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // outdent item
     if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault()
+      focusAfterMount(item.id, 'current')
       return fetcher.submit(
         { _action: 'outdent', id: item.id },
         { method: 'post' }
@@ -386,6 +392,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // enter note mode
     if (e.shiftKey && e.key === 'Enter') {
       e.preventDefault()
+      focus(item.id, 'start', 'body')
       document.getElementById(`body-${item.id}`)?.focus()
       return
     }
@@ -400,11 +407,12 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
           (item.order == allItems?.[item?.parentId]?.children?.length - 1 ||
             allItems?.[item?.parentId]?.children?.length == 1)
         ) {
+          focusAfterMount(item.id, 'current')
           return fetcher.submit(
             { _action: 'outdent', id: item.id },
             { method: 'post' }
-            )
-          }
+          )
+        }
       }
       const title = e.target.value.slice(e.target.selectionStart)
       const args = {
@@ -415,16 +423,21 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       if (item.parentId) {
         args.id = item.parentId
       }
+      focusAfterMount('new')
       return fetcher.submit(args, { method: 'post' })
     }
 
     // delete item
     if (e.key === 'Backspace') {
-      if (e.target.selectionStart === 0) {
-        return fetcher.submit(
+      if (e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
+        e.preventDefault()
+        const prevItem = getPrevItem(item, allItems)
+        focus(prevItem?.id, 'end')
+        fetcher.submit(
           { _action: 'deleteItem', id: item.id },
           { method: 'post' }
         )
+        return
       }
     }
 
@@ -433,16 +446,10 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       e.key === 'ArrowUp' ||
       (e.key === 'ArrowLeft' && e.target.selectionStart === 0)
     ) {
+      e.preventDefault()
       const prevItem = getPrevItem(item, allItems)
-      if (prevItem) {
-        e.preventDefault()
-        const elem = document.getElementById(`item-${prevItem.id}`)
-        elem?.focus()
-        if (e.key === 'ArrowLeft') {
-          const maxLength = elem?.value.length
-          elem?.setSelectionRange(maxLength, maxLength)
-        }
-      }
+      focus(prevItem?.id, e.key === 'ArrowLeft' ? 'end' : 'start')
+      return
     }
 
     // move cursor down
@@ -451,11 +458,10 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       (e.key === 'ArrowRight' &&
         e.target.selectionStart === e.target.value.length)
     ) {
+      e.preventDefault()
       const nextItem = getNextItem(item, allItems, true)
-      if (nextItem) {
-        e.preventDefault()
-        document.getElementById(`item-${nextItem.id}`)?.focus()
-      }
+      focus(nextItem?.id)
+      return
     }
   }
 
@@ -472,13 +478,13 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // exit note mode
     if (e.shiftKey && e.key === 'Enter') {
       e.preventDefault()
-      document.getElementById(`item-${item.id}`)?.focus()
+      focus(item.id)
     }
 
     // exit note mode
     if (e.key === 'Backspace' && e.target.value === '') {
       e.preventDefault()
-      document.getElementById(`item-${item.id}`)?.focus()
+      focus(item.id, 'end')
     }
 
     // move cursor up
@@ -487,12 +493,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       e.target.selectionStart === 0
     ) {
       e.preventDefault()
-      const elem = document.getElementById(`item-${item.id}`)
-      elem?.focus()
-      if (e.key === 'ArrowLeft') {
-        const maxLength = elem?.value.length
-        elem?.setSelectionRange(maxLength, maxLength)
-      }
+      focus(item.id, e.key === 'ArrowLeft' ? 'end' : 'start')
     }
 
     // move cursor down
@@ -500,18 +501,15 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       (e.key === 'ArrowDown' || e.key === 'ArrowRight') &&
       e.target.selectionStart === e.target.value.length
     ) {
+      e.preventDefault()
       const nextItem = getNextItem(item, allItems, true)
-      if (nextItem) {
-        e.preventDefault()
-        document.getElementById(`item-${nextItem.id}`)?.focus()
-      }
+      focus(nextItem?.id)
     }
   }
   return (
     <div className='flex-1'>
       <input
         id={`item-${item.id}`}
-        autoFocus
         onKeyDown={handleKeyDown}
         onChange={e => {
           fetcher.submit(
