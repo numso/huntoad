@@ -410,6 +410,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
         }
       }
       const title = input.value.slice(input.selectionStart || 0)
+      input.value = input.value.slice(0, input.selectionStart || 0)
 
       focusAfterMount('new', 'start')
       return fetcher.submit(
@@ -428,7 +429,16 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       if (input.selectionStart === 0 && input.selectionEnd === 0) {
         e.preventDefault()
         const prevItem = getPrevItem(item, allItems)
+        if (input.value) {
+          const prev = document.getElementById(`item-${prevItem?.id}`) as HTMLInputElement | null
+          if (prev) {
+            const len = prev.value.length
+            prev.value += input.value
+            focus(prevItem?.id, len)
+          }
+        } else {
         focus(prevItem?.id, 'end')
+        }
         fetcher.submit({ _action: 'deleteItem', id: item.id }, { method: 'post' })
         return
       }
