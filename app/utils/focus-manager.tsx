@@ -2,11 +2,10 @@ import React from 'react'
 
 interface FocusDetails {
   id: string
-  position: number
+  position: Position
   type: string
 }
 type Position = 'start' | 'end' | 'current' | number
-type _HTMLInputElement = HTMLInputElement | undefined
 type _FocusDetails = FocusDetails | null
 type _string = string | undefined
 
@@ -33,34 +32,45 @@ export function useFocuser (id: string) {
 
   const focus = (id: _string, position: Position, type = 'item') => {
     const key = `${type}-${id}`
-    const el = document.getElementById(key) as _HTMLInputElement
+    const el = document.getElementById(key) as HTMLDivElement
     if (!id || !el) return
-    position = getPosition(position, el)
+    const pos = getPosition(position, el)
     el.focus()
-    el.setSelectionRange(position, position)
+    setPosition(el, pos)
   }
 
   const focusAfterMount = (id: _string, position: Position, type = 'item') => {
     if (!id || !ref) return
-    position = getPosition(position, `${type}-${id}`)
+    position = resolveCurrent(position)
     ref.current = { id, position, type }
   }
 
-  return [focus, focusAfterMount]
+  return { focus, focusAfterMount }
 }
 
-function getPosition (position: Position, elementOrKey: string | HTMLInputElement): number {
+function resolveCurrent (position: Position): Position {
+  if (position !== 'current') return position
+  const selection = window.getSelection() as Selection
+  return selection.anchorOffset
+}
+
+function getPosition (position: Position, el: HTMLElement): number {
   if (position === 'start') return 0
-  if (typeof position == 'number') return position
-
-  let el: _HTMLInputElement
-  if (typeof elementOrKey === 'string') {
-    el = document.getElementById(elementOrKey) as _HTMLInputElement
-  } else {
-    el = elementOrKey
+  if (position === 'end') return el.textContent?.length || 0
+  if (position === 'current') {
+    const selection = window.getSelection() as Selection
+    return selection.anchorOffset
   }
+  return position
+}
 
-  if (el && position === 'end') return el.value.length
-  if (el && position === 'current') return el.selectionStart || 0
-  return 0
+function setPosition (el: HTMLDivElement, position: number) {
+  const node = el.firstChild
+  if (!node) return
+  const range = document.createRange()
+  range.setStart(node, position)
+  range.setEnd(node, position)
+  const selection = window.getSelection() as Selection
+  selection.removeAllRanges()
+  selection.addRange(range)
 }

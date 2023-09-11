@@ -254,7 +254,7 @@ interface ListProps {
 }
 
 function List ({ items, root, rootId, allItems }: ListProps) {
-  const [, focusAfterMount] = useFocuser('--')
+  const { focusAfterMount } = useFocuser('--')
   return (
     <ul className={cx('ml-16', { 'border-l': !root })}>
       {items.map((item, i) => (
@@ -359,11 +359,18 @@ interface SuperInputProps {
   allItems: ItemMap
 }
 
+type HandleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => void
+
 function SuperInput ({ item, i, allItems }: SuperInputProps) {
+  const onKeyDownRef = React.useRef<HandleKeyDown>()
+  const onBodyKeyDownRef = React.useRef<HandleKeyDown>()
   const fetcher = useFetcher()
-  const [focus, focusAfterMount] = useFocuser(item.id)
-  function handleKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
+  const { focus, focusAfterMount } = useFocuser(item.id)
+  onKeyDownRef.current = function (e: React.KeyboardEvent<HTMLDivElement>) {
     const input = e.currentTarget
+    const value = input.textContent as string
+    const selection = window.getSelection() as Selection
+    const { anchorOffset: startPos, focusOffset: endPos } = selection
 
     // indent item
     if (e.key === 'Tab' && !e.shiftKey) {
@@ -391,7 +398,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // enter note mode
     if (e.shiftKey && e.key === 'Enter') {
       e.preventDefault()
-      focus(item.id, 'start', 'body')
+      focus(item.id, 'end', 'body')
       return
     }
 
@@ -409,8 +416,8 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
           return fetcher.submit({ _action: 'outdent', id: item.id }, { method: 'post' })
         }
       }
-      const title = input.value.slice(input.selectionStart || 0)
-      input.value = input.value.slice(0, input.selectionStart || 0)
+      const title = value.slice(startPos || 0)
+      input.textContent = value.slice(0, startPos || 0)
 
       focusAfterMount('new', 'start')
       return fetcher.submit(
@@ -426,18 +433,18 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
 
     // delete item
     if (e.key === 'Backspace') {
-      if (input.selectionStart === 0 && input.selectionEnd === 0) {
+      if (startPos === 0 && endPos === 0) {
         e.preventDefault()
         const prevItem = getPrevItem(item, allItems)
-        if (input.value) {
+        if (value) {
           const prev = document.getElementById(`item-${prevItem?.id}`) as HTMLInputElement | null
           if (prev) {
-            const len = prev.value.length
-            prev.value += input.value
+            const len = prev.textContent?.length || 0
+            prev.textContent += value
             focus(prevItem?.id, len)
           }
         } else {
-        focus(prevItem?.id, 'end')
+          focus(prevItem?.id, 'end')
         }
         fetcher.submit({ _action: 'deleteItem', id: item.id }, { method: 'post' })
         return
@@ -445,7 +452,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     }
 
     // move cursor up
-    if (e.key === 'ArrowUp' || (e.key === 'ArrowLeft' && input.selectionStart === 0)) {
+    if (e.key === 'ArrowUp' || (e.key === 'ArrowLeft' && startPos === 0)) {
       e.preventDefault()
       const prevItem = getPrevItem(item, allItems)
       focus(prevItem?.id, e.key === 'ArrowLeft' ? 'end' : 'start')
@@ -453,19 +460,18 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     }
 
     // move cursor down
-    if (
-      e.key === 'ArrowDown' ||
-      (e.key === 'ArrowRight' && input.selectionStart === input.value.length)
-    ) {
+    if (e.key === 'ArrowDown' || (e.key === 'ArrowRight' && startPos === value.length)) {
       e.preventDefault()
       const nextItem = getNextItem(item, allItems, true)
       focus(nextItem?.id, 'start')
       return
     }
   }
-
-  function handleBodyKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
+  onBodyKeyDownRef.current = function (e: React.KeyboardEvent<HTMLDivElement>) {
     const input = e.currentTarget
+    const value = input.textContent as string
+    const selection = window.getSelection() as Selection
+    const { anchorOffset: startPos } = selection
 
     // mark item as complete / not complete
     if (e.metaKey && e.key === 'Enter') {
@@ -479,68 +485,92 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     // exit note mode
     if (e.shiftKey && e.key === 'Enter') {
       e.preventDefault()
-      focus(item.id, 'start')
+      focus(item.id, 'end')
     }
 
     // exit note mode
-    if (e.key === 'Backspace' && input.value === '') {
+    if (e.key === 'Backspace' && value === '') {
       e.preventDefault()
       focus(item.id, 'end')
     }
 
     // move cursor up
-    if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && input.selectionStart === 0) {
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && startPos === 0) {
       e.preventDefault()
       focus(item.id, e.key === 'ArrowLeft' ? 'end' : 'start')
     }
 
     // move cursor down
-    if (
-      (e.key === 'ArrowDown' || e.key === 'ArrowRight') &&
-      input.selectionStart === input.value.length
-    ) {
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && startPos === value.length) {
       e.preventDefault()
       const nextItem = getNextItem(item, allItems, true)
       focus(nextItem?.id, 'start')
     }
   }
+
+  React.useEffect(() => {
+    const el = document.getElementById(`item-${item.id}`) as HTMLDivElement
+    if (item.completed) {
+      el.classList.add('text-gray-400')
+      el.classList.add('line-through')
+    } else {
+      el.classList.remove('text-gray-400')
+      el.classList.remove('line-through')
+    }
+  }, [item.id, item.completed])
+
+  React.useEffect(() => {
+    const el = document.getElementById(`body-${item.id}`) as HTMLDivElement
+    if (item.body) el.classList.remove('sr-only')
+    else el.classList.add('sr-only')
+  }, [item.id, item.body])
+
   return (
     <div className='flex-1'>
-      <input
+      <FrozenDiv
+        dangerouslySetInnerHTML={{ __html: item.title }}
+        contentEditable
         id={`item-${item.id}`}
-        onKeyDown={handleKeyDown}
-        onChange={e => {
+        onKeyDownRef={onKeyDownRef}
+        onInput={e => {
           fetcher.submit(
-            { _action: 'updateTitle', id: item.id, title: e.target.value },
+            { _action: 'updateTitle', id: item.id, title: e.currentTarget.textContent },
             { method: 'post' }
           )
         }}
-        type='text'
-        className={cx('w-full bg-transparent py-1 outline-none', {
+        className={cx('bg-transparent py-1 outline-none', {
           'text-gray-400 line-through': item.completed
         })}
-        name='title'
-        defaultValue={item.title}
       />
-      <input
+      <FrozenDiv
+        dangerouslySetInnerHTML={{ __html: item.body }}
+        contentEditable
         id={`body-${item.id}`}
-        onKeyDown={handleBodyKeyDown}
-        onChange={e => {
+        onKeyDownRef={onBodyKeyDownRef}
+        onInput={e => {
           fetcher.submit(
-            { _action: 'updateBody', id: item.id, body: e.target.value },
+            { _action: 'updateBody', id: item.id, body: e.currentTarget.textContent },
             { method: 'post' }
           )
         }}
-        type='text'
         className={cx(
           'bg-transparent text-xs text-gray-400 outline-none focus:not-sr-only focus:w-full',
-          { 'sr-only': !item.body, 'w-full': item.body }
+          { 'sr-only': !item.body }
         )}
-        defaultValue={item.body}
       />
     </div>
   )
 }
+
+type DivProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>
+type FrozenDivProps = DivProps & { onKeyDownRef: React.MutableRefObject<HandleKeyDown | undefined> }
+
+const FrozenDiv = React.memo(
+  function FrozenDiv ({ onKeyDownRef, ...props }: FrozenDivProps) {
+    return <div {...props} onKeyDown={e => onKeyDownRef.current?.(e)} />
+  },
+  () => true
+)
 
 function getNextItem (item: Item, items: ItemMap, root = false): Item | null {
   if (root && item.children.length && !item.collapsed) return item.children[0]
