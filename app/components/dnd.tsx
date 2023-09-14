@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { Item } from './db.server'
+import type { Item } from '../utils/db.server'
 
 type State = [string, string] | null
 type _Item = Item | null

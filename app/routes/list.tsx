@@ -4,11 +4,11 @@ import { Form, useFetcher, useLoaderData, useSearchParams } from '@remix-run/rea
 import cx from 'clsx'
 import React from 'react'
 
+import { DndContext, useDragger } from '../components/dnd'
+import { FocusManager, useFocuser } from '../components/focus-manager'
+import * as Icons from '../components/icons'
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
-import { DndContext, useDragger } from '../utils/dnd'
-import { FocusManager, useFocuser } from '../utils/focus-manager'
-import * as Icons from '../utils/icons'
 
 interface Breadcrumb {
   id: string
