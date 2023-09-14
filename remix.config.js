@@ -6,6 +6,16 @@ module.exports = {
   // assetsBuildDirectory: "public/build",
   // serverBuildPath: "build/index.js",
   // publicPath: "/build/",
+  serverDependenciesToBundle: [
+    'conf',
+    'dot-prop',
+    'env-paths',
+    'atomically',
+    'debounce-fn',
+    'stubborn-fs',
+    'when-exit',
+    'mimic-fn'
+  ],
   serverModuleFormat: 'cjs',
   future: {
     v2_dev: true,

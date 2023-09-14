@@ -31,6 +31,10 @@ export default function Index () {
         Integrity check to make sure your data is good
       </a>
 
+      <a href='/settings' className='text-blue-400 underline hover:text-blue-500'>
+        Settings page
+      </a>
+
       {exampleItem ? (
         <>
           <a
