@@ -1,6 +1,6 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { Form, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react'
+import { Form, Link, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
 
@@ -526,7 +526,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
   }, [item.id, item.body])
 
   return (
-    <div className='flex-1'>
+    <div className='relative flex-1'>
       <FrozenDiv
         dangerouslySetInnerHTML={{ __html: item.title }}
         contentEditable
@@ -542,6 +542,14 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
           'text-gray-400 line-through': item.completed
         })}
       />
+      {item.body && (
+        <Link
+          to={`/markdown/${item.id}`}
+          className='absolute -left-4 mt-0.5 hidden rounded-full bg-blue-100 p-0.5 group-hover:block'
+        >
+          <Icons.ArrowUpLeft className='h-2 w-2 stroke-blue-500' />
+        </Link>
+      )}
       <FrozenDiv
         dangerouslySetInnerHTML={{ __html: item.body }}
         contentEditable

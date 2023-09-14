@@ -1,10 +1,11 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { useFetcher, useLoaderData } from '@remix-run/react'
+import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 import styles from 'easymde/dist/easymde.min.css'
 
 import { ClientOnly } from '../components/client-only'
+import * as Icons from '../components/icons'
 import { SimpleMdeReact } from '../components/md-editor.client'
 import * as db from '../utils/db.server'
 
@@ -43,8 +44,18 @@ export default function Index () {
 
   return (
     <div>
-      <h1 className={cx('bg-gray-100 p-4 text-2xl', { 'italic text-gray-500': !item.title })}>
+      <h1
+        className={cx('group flex items-center gap-4 bg-gray-100 p-4 text-2xl', {
+          'italic text-gray-500': !item.title
+        })}
+      >
         {item.title || 'unnamed'}
+        <Link
+          to={item.parentId ? `/list?id=${item.parentId}` : '/list'}
+          className='hidden rounded-full bg-blue-100 p-1 group-hover:block'
+        >
+          <Icons.ArrowUpLeft className='h-4 w-4 stroke-blue-500' />
+        </Link>
       </h1>
       <ClientOnly>
         {() => (
