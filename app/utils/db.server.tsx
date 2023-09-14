@@ -29,6 +29,11 @@ export async function loadItems (): Promise<Item[]> {
   return items
 }
 
+export async function getItem (id: string): Promise<Item> {
+  const raw = await fs.readFile(`./data/${id}.md`, 'utf-8')
+  return decode(raw, id)
+}
+
 function decode (raw: string, file: string): Item {
   const formatted = fm<FrontMatterObject>(raw)
   if (!formatted.attributes.tags) formatted.attributes.tags = []
@@ -100,7 +105,7 @@ export async function addItem (parentId: string | null, position: number, title:
     await reorder(siblingChildren)
   } else {
     siblings.splice(position + 1, 0, newItem)
-    if (title) {
+    if (sibling && title) {
       sibling.title = sibling.title.slice(0, -title.length)
       sibling.tags = parseTags(sibling.title)
       for (const child of siblingChildren) child.parentId = newItem.id
@@ -108,6 +113,8 @@ export async function addItem (parentId: string | null, position: number, title:
     }
     await reorder(siblings)
   }
+
+  return newItem
 }
 
 export async function moveItem (dragId: string, dropId: string, direction: string) {

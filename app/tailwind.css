@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.EasyMDEContainer > :first-child {
+  border: 0 !important;
+  height: calc(100vh - 64px) !important;
+}
