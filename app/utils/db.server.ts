@@ -213,7 +213,7 @@ export async function outdent (id: string, rootId: string | null): Promise<void>
   await reorder(newSiblings)
 }
 
-export async function convertToSteris (id: string) {
+export async function exportToSteris (id: string) {
   const items = await loadItems()
   function populateChildren (item: Item): void {
     item.children = items.filter(i => i.parentId == item.id)
@@ -235,6 +235,72 @@ function toSteris (item: Item, indent: string): string {
   const collapse = item.collapsed ? '<' : '>'
   const complete = item.completed ? 'x' : ' '
   return [`${indent}${collapse} [${complete}] ${item.title || ''}`, ...children].join('\n')
+}
+
+export async function importFromSteris (parentId: string, data: string) {
+  const items = await loadItems()
+  const siblings = items.filter(i => i.parentId === parentId)
+  const [a, b, c, ...rawItems] = data.trim().split('\n')
+  if (a !== '---' || c !== '---' || !b.startsWith('title: ')) throw new Error('invalid format, 1')
+  const title = b.replace('title: ', '')
+  const id = uuid.v4()
+  const parent = {
+    id,
+    collapsed: false,
+    completed: false,
+    tags: parseTags(title),
+    title,
+    children: fromSteris(rawItems, id, ''),
+    body: '',
+    order: siblings.length,
+    parentId
+  }
+  const newItems = flattenItems(parent)
+  for (const item of newItems) {
+    const [id, contents] = encode(item)
+    await fs.writeFile(`./data/${id}.md`, contents)
+  }
+}
+
+function flattenItems (item: Item): Item[] {
+  return [item, ...item.children.flatMap(flattenItems)]
+}
+
+function fromSteris (data: string[], parentId: string, indent: string): Item[] {
+  const children = []
+  let i = 0
+  while (data.length) {
+    const item = parseItem(data, indent, parentId, i++)
+    if (!item) break
+    children.push(item)
+    item.children = fromSteris(data, item.id, indent + '  ')
+  }
+  return children
+}
+
+function parseItem (data: string[], indent: string, parentId: string, i: number): Item | false {
+  if (!data[0].startsWith(indent)) return false
+  let title = data.shift()
+  if (!title || !title.startsWith(indent)) throw new Error('invalid format, 2')
+  title = title.replace(indent, '')
+  if (title[0] !== '>' && title[0] !== '<') throw new Error('invalid format, 3')
+  if (title[1] !== ' ') throw new Error('invalid format, 4')
+  if (title[2] !== '[' || title[4] !== ']') throw new Error('invalid format, 5')
+  if (title[3] !== 'x' && title[3] !== ' ') throw new Error('invalid format, 6')
+  const collapsed = title[0] === '<'
+  const completed = title[3] === 'x'
+  title = title.slice(6)
+  return {
+    id: uuid.v4(),
+    collapsed,
+    completed,
+    tags: parseTags(title),
+    title,
+    children: [],
+    body: '',
+    order: i,
+    parentId
+  }
 }
 
 interface StringKeyMap {

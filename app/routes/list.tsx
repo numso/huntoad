@@ -86,10 +86,17 @@ export async function action ({ context, params, request }: ActionArgs) {
       await db.deleteItem(id)
       break
     }
-    case 'share': {
-      const id = url.searchParams.get('id')
-      const steris = await db.convertToSteris(id)
+    case 'export': {
+      const id = url.searchParams.get('id') as string
+      const steris = await db.exportToSteris(id)
       return json({ steris })
+    }
+    case 'import': {
+      const id = url.searchParams.get('id') as string
+      const data = form.get('data')
+      if (typeof id !== 'string' || typeof data !== 'string') return
+      await db.importFromSteris(id, data)
+      break
     }
     case 'setCompleted': {
       const id = form.get('id')
@@ -213,7 +220,7 @@ export default function Index () {
         <div id='dropzone' className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500' />
         <div className='p-4'>
           {!!breadcrumbs.length && (
-            <ul className='group flex pb-4'>
+            <ul className='group flex items-center pb-4'>
               <li>
                 <a className='hover:text-blue-500' href='/list'>
                   @
@@ -229,12 +236,25 @@ export default function Index () {
                   </li>
                 </React.Fragment>
               ))}
-              <li className='ml-10'>
+              <li className='ml-2'>
                 <button
-                  className='rounded-md bg-blue-700 px-2 text-sm text-white opacity-0 transition-all hover:bg-blue-800 active:bg-blue-900 group-hover:opacity-100'
-                  onClick={() => fetcher.submit({ _action: 'share' }, { method: 'post' })}
+                  className='rounded-full p-2 opacity-0 transition-all hover:bg-blue-200  group-hover:opacity-100'
+                  onClick={() => fetcher.submit({ _action: 'export' }, { method: 'post' })}
+                  title='Export items to clipboard'
                 >
-                  share
+                  <Icons.ArrowUpOnSquareStack className='h-4 w-4' />
+                </button>
+              </li>
+              <li className=''>
+                <button
+                  className='rounded-full p-2 opacity-0 transition-all hover:bg-blue-200  group-hover:opacity-100'
+                  onClick={async () => {
+                    const data = await navigator.clipboard.readText()
+                    fetcher.submit({ _action: 'import', data }, { method: 'post' })
+                  }}
+                  title='Import items from clipboard'
+                >
+                  <Icons.ArrowDownOnSquareStack className='h-4 w-4' />
                 </button>
               </li>
             </ul>
