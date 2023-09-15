@@ -218,7 +218,7 @@ export default function Index () {
         }}
       >
         <div id='dropzone' className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500' />
-        <div className='p-4'>
+        <div className='p-4 pb-96'>
           {!!breadcrumbs.length && (
             <ul className='group flex items-center pb-4'>
               <li>

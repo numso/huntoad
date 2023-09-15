@@ -1,9 +1,22 @@
 import Conf from 'conf'
 
-const config = new Conf({ projectName: 'huntoad' })
+const config = new Conf({
+  projectName: 'huntoad',
+  defaults: {
+    darkmode: false,
+    datadir: process.cwd() + '/data',
+    name: 'Toad Hunter ' + `${Math.floor(Math.random() * 9999)}`.padStart(4, '0'),
+    color:
+      '#' +
+      Math.floor(Math.random() * 16777215)
+        .toString(16)
+        .padStart(6, '0')
+  }
+})
 
 interface Settings {
   darkmode: boolean
+  datadir: string
   name: string
   color: string
 }

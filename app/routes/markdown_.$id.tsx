@@ -46,7 +46,9 @@ export default function Index () {
     <div>
       <h1
         className={cx('group flex items-center gap-4 bg-gray-100 p-4 text-2xl', {
-          'italic text-gray-500': !item.title
+          'text-gray-500': !item.title || item.completed,
+          'italic ': !item.title,
+          'line-through': item.completed
         })}
       >
         {item.title || 'unnamed'}

@@ -13,24 +13,18 @@ export function loader () {
 
 export async function action ({ request }: ActionArgs) {
   const form = await request.formData()
-  switch (form.get('_action')) {
-    case 'toggleDarkmode': {
-      const enabled = form.get('value') === 'true'
-      settings.update('darkmode', enabled)
+  const key = form.get('key')
+  const value = form.get('value')
+  if (typeof key !== 'string' || typeof value !== 'string') return
+  switch (key) {
+    case 'darkmode':
+      settings.update('darkmode', value === 'true')
       break
-    }
-    case 'updateName': {
-      const value = form.get('value')
-      if (typeof value !== 'string') return
-      settings.update('name', value)
+    case 'datadir':
+    case 'name':
+    case 'color':
+      settings.update(key, value)
       break
-    }
-    case 'updateColor': {
-      const value = form.get('value')
-      if (typeof value !== 'string') return
-      settings.update('color', value)
-      break
-    }
   }
   return null
 }
@@ -46,25 +40,29 @@ export default function Settings () {
         label='Dark mode'
         enabled={data.darkmode}
         onChange={() =>
-          fetcher.submit({ _action: 'toggleDarkmode', value: !data.darkmode }, { method: 'post' })
+          fetcher.submit({ key: 'darkmode', value: !data.darkmode }, { method: 'post' })
+        }
+      />
+      <Input
+        id='datadir'
+        label='Data directory'
+        value={data.datadir}
+        onChange={e =>
+          fetcher.submit({ key: 'datadir', value: e.target.value }, { method: 'post' })
         }
       />
       <Input
         id='name'
         label='Name'
         value={data.name}
-        onChange={e =>
-          fetcher.submit({ _action: 'updateName', value: e.target.value }, { method: 'post' })
-        }
+        onChange={e => fetcher.submit({ key: 'name', value: e.target.value }, { method: 'post' })}
       />
       <Input
         id='color'
         label='Color'
         type='color'
         value={data.color}
-        onChange={e =>
-          fetcher.submit({ _action: 'updateColor', value: e.target.value }, { method: 'post' })
-        }
+        onChange={e => fetcher.submit({ key: 'color', value: e.target.value }, { method: 'post' })}
       />
     </div>
   )
