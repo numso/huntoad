@@ -87,7 +87,7 @@ export async function action ({ context, params, request }: ActionArgs) {
       break
     }
     case 'export': {
-      const id = url.searchParams.get('id') as string
+      const id = url.searchParams.get('id') || ''
       const steris = await db.exportToSteris(id)
       return json({ steris })
     }

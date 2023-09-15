@@ -9,6 +9,7 @@ interface FrontMatterObject {
   collapsed: boolean
   parentId: string | null
   tags: string[]
+  dates: string[]
 }
 
 export type Item = FrontMatterObject & {
@@ -34,9 +35,19 @@ export async function getItem (id: string): Promise<Item> {
   return decode(raw, id)
 }
 
+export async function getItemsForMonth (month: number, year: number) {
+  const items = await loadItems()
+  return items.filter(i => {
+    return !!i.dates
+      .map(d => new Date(d))
+      .filter(d => d.getFullYear() === year && d.getMonth() === month).length
+  })
+}
+
 function decode (raw: string, file: string): Item {
   const formatted = fm<FrontMatterObject>(raw)
   if (!formatted.attributes.tags) formatted.attributes.tags = []
+  if (!formatted.attributes.dates) formatted.attributes.dates = []
   return {
     ...formatted.attributes,
     body: formatted.body,
@@ -54,12 +65,17 @@ function parseTags (title: string): string[] {
   return [...new Set([...title.matchAll(/#([\S]+)/g)].map(a => a[1]))]
 }
 
+function parseDates (title: string): string[] {
+  return [...new Set([...title.matchAll(/:(\d{1,2}-\d{1,2}-\d{4})/g)].map(a => a[1]))]
+}
+
 export async function updateTitle (id: string, title: string) {
   const p = `./data/${id}.md`
   const contents = await fs.readFile(p, 'utf-8')
   const res = fm<FrontMatterObject>(contents)
   res.attributes.title = title
   res.attributes.tags = parseTags(title)
+  res.attributes.dates = parseDates(title)
   const newContents = `${writeFrontMatter(res.attributes)}\n${res.body}`
   await fs.writeFile(p, newContents)
 }
@@ -94,7 +110,13 @@ export async function setCollapsed (id: string, collapsed: boolean) {
 export async function addItem (parentId: string | null, position: number, title: string) {
   if (!parentId) parentId = null
   const items = await loadItems()
-  const newItem = { id: uuid.v4(), parentId, title, tags: parseTags(title) }
+  const newItem = {
+    id: uuid.v4(),
+    parentId,
+    title,
+    tags: parseTags(title),
+    dates: parseDates(title)
+  }
   const siblings = items.filter(i => i.parentId == parentId)
   const sibling = siblings[position]
   const siblingChildren = sibling ? items.filter(i => i.parentId === sibling.id) : []
@@ -108,6 +130,7 @@ export async function addItem (parentId: string | null, position: number, title:
     if (sibling && title) {
       sibling.title = sibling.title.slice(0, -title.length)
       sibling.tags = parseTags(sibling.title)
+      sibling.dates = parseDates(sibling.title)
       for (const child of siblingChildren) child.parentId = newItem.id
       await reorder(siblingChildren)
     }
@@ -159,6 +182,7 @@ export async function deleteItem (id: string) {
     if (prevChildren.length) return
     prevSibling.title += item.title
     prevSibling.tags = parseTags(prevSibling.title)
+    prevSibling.dates = parseDates(prevSibling.title)
     for (const child of children) child.parentId = prevSibling.id
     await reorder(children)
   }
@@ -219,7 +243,8 @@ export async function exportToSteris (id: string) {
     item.children = items.filter(i => i.parentId == item.id)
     item.children.map(populateChildren)
   }
-  const item = items.find(i => i.id == id)
+  const item =
+    id === '' ? { title: 'All Notes', parentId: null, children: [] } : items.find(i => i.id == id)
   if (!item) return ''
   populateChildren(item)
   return `
@@ -252,6 +277,7 @@ export async function importFromSteris (parentId: string, data: string) {
     collapsed: false,
     completed: false,
     tags: parseTags(title),
+    dates: parseDates(title),
     title,
     children: fromSteris(rawItems, id, ''),
     body: '',
@@ -303,6 +329,7 @@ function parseItem (data: string[], indent: string, parentId: string, i: number)
     collapsed,
     completed,
     tags: parseTags(title),
+    dates: parseDates(title),
     title,
     children: [],
     body,
