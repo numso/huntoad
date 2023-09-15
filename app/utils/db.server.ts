@@ -234,7 +234,10 @@ function toSteris (item: Item, indent: string): string {
   const children = item.children.map(i => toSteris(i, indent + '  '))
   const collapse = item.collapsed ? '<' : '>'
   const complete = item.completed ? 'x' : ' '
-  return [`${indent}${collapse} [${complete}] ${item.title || ''}`, ...children].join('\n')
+  const notes = item.body && `${indent}# ${item.body.replace(/\n/g, '↩')}`
+  return [`${indent}${collapse} [${complete}] ${item.title || ''}`, notes, ...children]
+    .filter(Boolean)
+    .join('\n')
 }
 
 export async function importFromSteris (parentId: string, data: string) {
@@ -283,6 +286,11 @@ function parseItem (data: string[], indent: string, parentId: string, i: number)
   let title = data.shift()
   if (!title || !title.startsWith(indent)) throw new Error('invalid format, 2')
   title = title.replace(indent, '')
+  let body = ''
+  if (data[0]?.startsWith(indent + '# ')) {
+    body = data.shift() as string
+    body = body.replace(indent + '# ', '').replace(/↩/g, '\n')
+  }
   if (title[0] !== '>' && title[0] !== '<') throw new Error('invalid format, 3')
   if (title[1] !== ' ') throw new Error('invalid format, 4')
   if (title[2] !== '[' || title[4] !== ']') throw new Error('invalid format, 5')
@@ -297,7 +305,7 @@ function parseItem (data: string[], indent: string, parentId: string, i: number)
     tags: parseTags(title),
     title,
     children: [],
-    body: '',
+    body,
     order: i,
     parentId
   }
