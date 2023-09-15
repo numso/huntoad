@@ -1,8 +1,9 @@
 import type { LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { useLoaderData, useParams } from '@remix-run/react'
+import { Link, useLoaderData, useParams } from '@remix-run/react'
 import cx from 'clsx'
 
+import * as Icons from '../components/icons'
 import * as db from '../utils/db.server'
 
 export async function loader ({ params }: LoaderArgs) {
@@ -17,7 +18,13 @@ export default function Index () {
   const { items } = useLoaderData<typeof loader>()
   return (
     <div className='p-4'>
-      <h1 className='pb-4 text-2xl'>#{tag}</h1>
+      <h1 className='flex items-center gap-4 pb-4 text-2xl'>
+        <Link to='/' className='hover:text-blue-500'>
+          <Icons.HomeModern className='h-8 w-8' />
+        </Link>
+        <Icons.ChevronRight className='h-4 w-4' />
+        <span>#{tag}</span>
+      </h1>
       <ul>
         {items.map(item => (
           <li

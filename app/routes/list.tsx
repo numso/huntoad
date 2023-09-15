@@ -218,13 +218,18 @@ export default function Index () {
         }}
       >
         <div id='dropzone' className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500' />
+
         <div className='p-4 pb-96'>
-          {!!breadcrumbs.length && (
-            <ul className='group flex items-center pb-4'>
+          <h1 className='group flex items-center gap-4 pb-4'>
+            <Link to='/' className='hover:text-blue-500'>
+              <Icons.HomeModern className='h-8 w-8' />
+            </Link>
+            <Icons.ChevronRight className='h-4 w-4' />
+            <ul className='flex items-center'>
               <li>
-                <a className='hover:text-blue-500' href='/list'>
-                  @
-                </a>
+                <Link to='/list' className='hover:text-blue-500'>
+                  <Icons.BookOpen className='h-6 w-6' />
+                </Link>
               </li>
               {breadcrumbs.map(crumb => (
                 <React.Fragment key={crumb.id}>
@@ -258,7 +263,8 @@ export default function Index () {
                 </button>
               </li>
             </ul>
-          )}
+          </h1>
+
           <List items={items} allItems={allItems} root rootId={searchParams.get('id') || ''} />
         </div>
       </DndContext>

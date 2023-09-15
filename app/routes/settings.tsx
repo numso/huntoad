@@ -1,9 +1,10 @@
 import type { ActionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { useFetcher, useLoaderData } from '@remix-run/react'
+import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
 
+import * as Icons from '../components/icons'
 import * as settings from '../utils/settings.server'
 
 export function loader () {
@@ -34,7 +35,13 @@ export default function Settings () {
   const fetcher = useFetcher()
   return (
     <div className='flex max-w-sm flex-col gap-4 p-4'>
-      <h1 className='pb-4 text-2xl'>Settings</h1>
+      <h1 className='flex items-center gap-4 pb-4 text-2xl'>
+        <Link to='/' className='hover:text-blue-500'>
+          <Icons.HomeModern className='h-8 w-8' />
+        </Link>
+        <Icons.ChevronRight className='h-4 w-4' />
+        <span>Settings</span>
+      </h1>
       <Toggle
         id='dark-mode'
         label='Dark mode'

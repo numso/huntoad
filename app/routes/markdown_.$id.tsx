@@ -51,7 +51,11 @@ export default function Index () {
           'line-through': item.completed
         })}
       >
-        {item.title || 'unnamed'}
+        <Link to='/' className='hover:text-blue-500'>
+          <Icons.HomeModern className='h-8 w-8' />
+        </Link>
+        <Icons.ChevronRight className='h-4 w-4' />
+        <span>{item.title || 'unnamed'}</span>
         <Link
           to={item.parentId ? `/list?id=${item.parentId}` : '/list'}
           className='hidden rounded-full bg-blue-100 p-1 group-hover:block'

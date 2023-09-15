@@ -1,6 +1,7 @@
 import { json } from '@remix-run/node'
-import { useLoaderData } from '@remix-run/react'
+import { Link, useLoaderData } from '@remix-run/react'
 
+import * as Icons from '../components/icons'
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
 
@@ -80,7 +81,10 @@ export default function Index () {
   if (ok) return <div className='p-4'>ok</div>
   return (
     <div className='p-4'>
-      <div>not ok</div>
+      <Link to='/' className='hover:text-blue-500'>
+        <Icons.HomeModern className='h-8 w-8' />
+      </Link>
+      <div className='pl-8 pt-8'>not ok</div>
       <ul className='flex flex-col gap-8 p-8'>
         {errors.map(error => (
           <li key={error.id}>
