@@ -4,7 +4,6 @@ import { Link, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 
 import * as Icons from '../components/icons'
-import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
 
 const months = [
@@ -32,11 +31,11 @@ export async function loader ({ params }: LoaderArgs) {
   if (isNaN(year) || year < 1970 || year > 3000) throw new Error('bad year')
   const monthNum = months.indexOf(month)
   const lastDate = new Date(year, monthNum + 1, 0)
-  if (isNaN(day) || day < 0 || day > lastDate.getDate()) throw new Error('bad day')
+  if (isNaN(day) || day < 1 || day > lastDate.getDate()) throw new Error('bad day')
   const items = await db.getItemsForDay(monthNum, day, year)
   const currentDate = new Date(year, monthNum, day)
   const prev = new Date(+currentDate - oneDayInMilliseconds)
-  const next = new Date(+currentDate + oneDayInMilliseconds)
+  const next = new Date(+currentDate + oneDayInMilliseconds * 1.5)
   return json({
     items,
     month,
@@ -58,10 +57,10 @@ export default function Calendar () {
         <Link to={prevUrl} className='rotate-180 hover:text-blue-500'>
           <Icons.ChevronRight className='h-4 w-4' />
         </Link>
-        <span className='w-56 text-center capitalize'>
+        <span className='w-56 text-center'>
           <Link
             to={`/calendar/month/${month}/${year}`}
-            className='rounded-md p-1 pl-2 transition-all hover:bg-slate-200'
+            className='-mr-1 rounded-md px-1 py-0.5 capitalize transition-all hover:bg-slate-200'
           >
             {month.toLowerCase()}
           </Link>{' '}

@@ -70,7 +70,9 @@ export default function Calendar () {
               month={month}
               date={i}
               year={year}
-              items={items.filter(item => item.dates.includes(`${monthNum + 1}-${i}-${year}`))}
+              items={items.filter(item =>
+                item.dates.map(d => +new Date(d)).includes(+new Date(year, monthNum, i))
+              )}
             />
           ))}
         </div>
@@ -97,12 +99,15 @@ function Day ({ month, date, year, items }: DayProps) {
         <Link
           key={item.id}
           to={`/list?id=${item.id}`}
-          className={cx('mb-1 ml-2 whitespace-nowrap rounded-l-full bg-red-300 pl-2 text-xs', {
-            'hidden lg:block': i === 4 || i === 5,
-            'hidden min-[900px]:block': i === 3,
-            'hidden md:block': i === 2,
-            'block ': i === 0 || i === 1
-          })}
+          className={cx(
+            'mb-1 ml-2 whitespace-nowrap rounded-l-full bg-blue-300 pl-2 text-xs hover:bg-blue-400',
+            {
+              'hidden lg:block': i === 4 || i === 5,
+              'hidden min-[900px]:block': i === 3,
+              'hidden md:block': i === 2,
+              'block ': i === 0 || i === 1
+            }
+          )}
           title={item.title}
         >
           {item.title}

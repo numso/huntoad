@@ -35,12 +35,27 @@ export async function getItem (id: string): Promise<Item> {
   return decode(raw, id)
 }
 
+const oneDayInMilliseconds = 24 * 60 * 60 * 1000
+
 export async function getItemsForMonth (month: number, year: number) {
   const items = await loadItems()
   return items.filter(i => {
     return !!i.dates
       .map(d => new Date(d))
       .filter(d => d.getFullYear() === year && d.getMonth() === month).length
+  })
+}
+
+export async function getItemsForWeek (date: Date) {
+  const items = await loadItems()
+  return items.filter(i => {
+    return !!i.dates
+      .map(d => {
+        let date = new Date(d)
+        date = new Date(+date - date.getDay() * oneDayInMilliseconds)
+        return date
+      })
+      .filter(d => +d === +date).length
   })
 }
 
