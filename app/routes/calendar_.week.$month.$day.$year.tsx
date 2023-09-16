@@ -59,25 +59,24 @@ export default function Calendar () {
   const firstDate = new Date(year, monthNum, day)
   return (
     <div className='min-h-screen bg-gray-100'>
-      <h1 className='flex items-center bg-white p-4 text-2xl'>
+      <h1 className='group flex items-center bg-white p-4 text-2xl'>
         <Link to='/' className='mr-8 hover:text-blue-500'>
           <Icons.HomeModern className='h-8 w-8' />
         </Link>
         <Link to={prevUrl} className='rotate-180 hover:text-blue-500'>
           <Icons.ChevronRight className='h-4 w-4' />
         </Link>
-        <span className='w-80 text-center'>
-          Week of{' '}
-          <Link
-            to={`/calendar/month/${month}/${year}`}
-            className='-ml-1 rounded-md px-1 py-0.5 capitalize transition-all hover:bg-slate-200'
-          >
-            {month.toLowerCase()}
-          </Link>
-          {day}, {year}
+        <span className='w-80 text-center capitalize'>
+          Week of {month.toLowerCase()} {day}, {year}
         </span>
         <Link to={nextUrl} className='hover:text-blue-500'>
           <Icons.ChevronRight className='h-4 w-4' />
+        </Link>
+        <Link
+          className='ml-4 rounded-md bg-blue-400 px-3 py-1 text-sm text-white opacity-0 transition-all hover:bg-blue-500 group-hover:opacity-100'
+          to={`/calendar/month/${month}/${year}`}
+        >
+          Month View
         </Link>
       </h1>
       <div className='my-10'>
