@@ -44,6 +44,15 @@ export async function getItemsForMonth (month: number, year: number) {
   })
 }
 
+export async function getItemsForDay (month: number, day: number, year: number) {
+  const items = await loadItems()
+  return items.filter(i => {
+    return !!i.dates
+      .map(d => new Date(d))
+      .filter(d => d.getFullYear() === year && d.getDate() === day && d.getMonth() === month).length
+  })
+}
+
 function decode (raw: string, file: string): Item {
   const formatted = fm<FrontMatterObject>(raw)
   if (!formatted.attributes.tags) formatted.attributes.tags = []

@@ -34,8 +34,8 @@ export async function loader ({ params }: LoaderArgs) {
     month,
     year,
     monthNum,
-    nextUrl: `/calendar/month/${months[(monthNum + 1) % 12]}/${monthNum == 11 ? year + 1 : year}`,
-    prevUrl: `/calendar/month/${months[(monthNum + 11) % 12]}/${monthNum == 0 ? year - 1 : year}`
+    prevUrl: `/calendar/month/${months[(monthNum + 11) % 12]}/${monthNum == 0 ? year - 1 : year}`,
+    nextUrl: `/calendar/month/${months[(monthNum + 1) % 12]}/${monthNum == 11 ? year + 1 : year}`
   })
 }
 
@@ -67,7 +67,9 @@ export default function Calendar () {
           {days.map(i => (
             <Day
               key={i}
+              month={month}
               date={i}
+              year={year}
               items={items.filter(item => item.dates.includes(`${monthNum + 1}-${i}-${year}`))}
             />
           ))}
@@ -78,13 +80,18 @@ export default function Calendar () {
 }
 
 interface DayProps {
+  month: string
   date: number
+  year: number
   items: Item[]
 }
 
-function Day ({ date, items }: DayProps) {
+function Day ({ month, date, year, items }: DayProps) {
   return (
-    <div className='aspect-square overflow-hidden bg-white'>
+    <Link
+      to={`/calendar/day/${month}/${date}/${year}`}
+      className='aspect-square overflow-hidden bg-white transition-all hover:bg-yellow-50'
+    >
       <h2>{date}</h2>
       {items.slice(0, 5).map((item, i) => (
         <Link
@@ -117,6 +124,6 @@ function Day ({ date, items }: DayProps) {
       {items.length > 5 && (
         <div className='mr-2 hidden text-right text-xs lg:block'>{items.length - 5} more</div>
       )}
-    </div>
+    </Link>
   )
 }
