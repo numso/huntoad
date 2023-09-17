@@ -63,13 +63,29 @@ export default function Calendar () {
       </h1>
       <div className='my-10 w-full overflow-auto'>
         <div className='mx-auto grid w-full min-w-[600px] max-w-5xl grid-cols-7 gap-1'>
-          {!!offset && <div style={{ gridColumn: `span ${offset} / span ${offset}` }} />}
+          {!!offset && (
+            <div
+              className='relative'
+              style={{ gridColumn: `span ${offset} / span ${offset}` }}
+              data-week-anchor='1'
+            >
+              <Link
+                data-week-link
+                to={`/calendar/week/${month}/1/${year}`}
+                className='absolute -left-28 flex h-full w-28 items-center justify-center bg-blue-100 opacity-0 transition-all hover:opacity-100'
+              >
+                Show Week
+              </Link>
+            </div>
+          )}
           {days.map(i => (
             <Day
               key={i}
               month={month}
               date={i}
               year={year}
+              weekAnchor={(offset + i + 6) % 7 === 0 ? (offset + i + 6) / 7 : null}
+              weekNum={Math.floor((offset + i + 6) / 7)}
               items={items.filter(item =>
                 item.dates.map(d => +new Date(d)).includes(+new Date(year, monthNum, i))
               )}
@@ -86,21 +102,34 @@ interface DayProps {
   date: number
   year: number
   items: Item[]
+  weekAnchor: number | null
+  weekNum: number
 }
 
-function Day ({ month, date, year, items }: DayProps) {
+function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
   return (
     <Link
       to={`/calendar/day/${month}/${date}/${year}`}
-      className='aspect-square overflow-hidden bg-white transition-all hover:bg-yellow-50'
+      className='relative aspect-square bg-white transition-all hover:bg-yellow-50'
+      data-week-anchor={weekAnchor}
+      data-week-num={weekNum}
     >
+      {weekAnchor && (
+        <Link
+          data-week-link
+          to={`/calendar/week/${month}/${date}/${year}`}
+          className='absolute -left-28 flex h-full w-28 items-center justify-center bg-blue-100 opacity-0 transition-all hover:bg-blue-200 hover:opacity-100'
+        >
+          Show Week
+        </Link>
+      )}
       <h2>{date}</h2>
       {items.slice(0, 5).map((item, i) => (
         <Link
           key={item.id}
           to={`/list?id=${item.id}`}
           className={cx(
-            'mb-1 ml-2 whitespace-nowrap rounded-l-full bg-blue-300 pl-2 text-xs hover:bg-blue-400',
+            'mb-1 ml-2 overflow-hidden whitespace-nowrap rounded-l-full bg-blue-300 pl-2 text-xs hover:bg-blue-400',
             {
               'hidden lg:block': i === 4 || i === 5,
               'hidden min-[900px]:block': i === 3,
