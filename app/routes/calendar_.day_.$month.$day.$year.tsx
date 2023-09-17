@@ -76,26 +76,24 @@ export default function Calendar () {
           Month View
         </Link>
       </h1>
-      <div className='my-10 w-full overflow-auto'>
-        <ul>
-          {items.map(item => (
-            <li
+      <div className='mx-auto my-10 max-w-2xl'>
+        {items.map(item => {
+          let title = item.title
+          for (const date of item.dates) title = title.replaceAll(':' + date, '')
+          return (
+            <Link
               key={item.id}
-              className={cx('ml-6 list-disc py-2', {
+              className={cx('m-1 block rounded-full bg-blue-300 px-2 text-xs hover:bg-blue-400', {
                 'text-gray-400 line-through': item.completed
               })}
+              to={`/list?id=${item.id}`}
+              target='_blank'
+              rel='noopener noreferrer'
             >
-              <a
-                className='hover:text-blue-500'
-                href={`/list?id=${item.id}`}
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                {item.title}
-              </a>
-            </li>
-          ))}
-        </ul>
+              {title}
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

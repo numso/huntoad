@@ -124,24 +124,29 @@ function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
         </Link>
       )}
       <h2>{date}</h2>
-      {items.slice(0, 5).map((item, i) => (
-        <Link
-          key={item.id}
-          to={`/list?id=${item.id}`}
-          className={cx(
-            'mb-1 ml-2 overflow-hidden whitespace-nowrap rounded-l-full bg-blue-300 pl-2 text-xs hover:bg-blue-400',
-            {
-              'hidden lg:block': i === 4 || i === 5,
-              'hidden min-[900px]:block': i === 3,
-              'hidden md:block': i === 2,
-              'block ': i === 0 || i === 1
-            }
-          )}
-          title={item.title}
-        >
-          {item.title}
-        </Link>
-      ))}
+      {items.slice(0, 5).map((item, i) => {
+        let title = item.title
+        for (const date of item.dates) title = title.replaceAll(':' + date, '')
+        return (
+          <Link
+            key={item.id}
+            to={`/list?id=${item.id}`}
+            className={cx(
+              'relative mb-1 ml-2 overflow-hidden whitespace-nowrap rounded-l-full bg-blue-300 pl-2 text-xs hover:bg-blue-400',
+              {
+                'text-gray-400 line-through': item.completed,
+                'hidden lg:block': i === 4 || i === 5,
+                'hidden min-[900px]:block': i === 3,
+                'hidden md:block': i === 2,
+                'block ': i === 0 || i === 1
+              }
+            )}
+            title={title}
+          >
+            {title}
+          </Link>
+        )
+      })}
       {items.length > 2 && (
         <div className='mr-2 block text-right text-xs md:hidden'>{items.length - 2} more</div>
       )}

@@ -79,47 +79,44 @@ export default function Calendar () {
           Month View
         </Link>
       </h1>
-      <div className='my-10'>
-        <div className='grid grid-cols-7 gap-0.5'>
-          {days.map(day => {
-            let date = new Date(+firstDate + oneDayInMilliseconds * (day + 0.5))
-            date = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-            const month = months[date.getMonth()]
-            const myItems = items.filter(item => item.dates.map(d => +new Date(d)).includes(+date))
-            return (
-              <div key={day} className='bg-white'>
-                <div className='text-center text-lg font-medium'>
-                  {date.toLocaleDateString('en-US', { weekday: 'long' })}
-                </div>
-                <Link
-                  to={`/calendar/day/${month}/${date.getDate()}/${date.getFullYear()}`}
-                  className='block text-center text-xs capitalize hover:text-blue-500'
-                >
-                  {month} {date.getDate()}, {date.getFullYear()}
-                </Link>
-                <ul>
-                  {myItems.map(item => (
-                    <li
-                      key={item.id}
-                      className={cx('ml-6 list-disc py-2', {
-                        'text-gray-400 line-through': item.completed
-                      })}
-                    >
-                      <a
-                        className='hover:text-blue-500'
-                        href={`/list?id=${item.id}`}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                      >
-                        {item.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+      <div className='my-10 grid grid-cols-7 gap-0.5'>
+        {days.map(day => {
+          let date = new Date(+firstDate + oneDayInMilliseconds * (day + 0.5))
+          date = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+          const month = months[date.getMonth()]
+          const myItems = items.filter(item => item.dates.map(d => +new Date(d)).includes(+date))
+          return (
+            <div key={day} className='bg-white'>
+              <div className='text-center text-lg font-medium'>
+                {date.toLocaleDateString('en-US', { weekday: 'long' })}
               </div>
-            )
-          })}
-        </div>
+              <Link
+                to={`/calendar/day/${month}/${date.getDate()}/${date.getFullYear()}`}
+                className='block text-center text-xs capitalize hover:text-blue-500'
+              >
+                {month} {date.getDate()}, {date.getFullYear()}
+              </Link>
+              {myItems.map(item => {
+                let title = item.title
+                for (const date of item.dates) title = title.replaceAll(':' + date, '')
+                return (
+                  <Link
+                    key={item.id}
+                    className={cx(
+                      'm-1 block rounded-full bg-blue-300 px-2 text-xs hover:bg-blue-400',
+                      { 'text-gray-400 line-through': item.completed }
+                    )}
+                    to={`/list?id=${item.id}`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                  >
+                    {title}
+                  </Link>
+                )
+              })}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
