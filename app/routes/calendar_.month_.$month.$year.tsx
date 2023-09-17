@@ -108,12 +108,12 @@ interface DayProps {
 
 function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
   return (
-    <Link
-      to={`/calendar/day/${month}/${date}/${year}`}
+    <div
       className='relative aspect-square bg-white transition-all hover:bg-yellow-50'
       data-week-anchor={weekAnchor}
       data-week-num={weekNum}
     >
+      <Link to={`/calendar/day/${month}/${date}/${year}`} className='absolute h-full w-full' />
       {weekAnchor && (
         <Link
           data-week-link
@@ -158,6 +158,6 @@ function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
       {items.length > 5 && (
         <div className='mr-2 hidden text-right text-xs lg:block'>{items.length - 5} more</div>
       )}
-    </Link>
+    </div>
   )
 }
