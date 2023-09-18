@@ -1,12 +1,27 @@
-import { Link } from '@remix-run/react'
+import { json } from '@remix-run/node'
+import { Link, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 
 import * as Icons from '../components/icons'
+import type { Favorite } from '../utils/settings.server'
+import * as settings from '../utils/settings.server'
+
+export async function loader () {
+  return json({
+    favorites: await settings.getAllFavorites()
+  })
+}
 
 export default function Index () {
+  const { favorites } = useLoaderData<typeof loader>()
   return (
     <div className='flex flex-col items-center'>
       <Icons.HomeModern className='h-52 w-52 transition-all [transition-duration:10s] hover:h-[1000px] hover:w-[1000px]' />
+      <div className='flex flex-wrap justify-center gap-4 p-4'>
+        {favorites.map(f => (
+          <FavoriteLink key={`${f.type}-${f.id}`} favorite={f} />
+        ))}
+      </div>
       <div className='flex flex-wrap justify-center gap-4 p-4'>
         <FancyLink
           to='/list'
@@ -70,4 +85,23 @@ function FancyLink ({ to, label, description, children, className }: FancyLinkPr
       <div className='text-gray-400'>{description}</div>
     </Link>
   )
+}
+
+interface FavoriteLinkProps {
+  favorite: Favorite
+}
+
+function FavoriteLink ({ favorite }: FavoriteLinkProps) {
+  if (favorite.type === 'list') {
+    return (
+      <Link
+        to={`/list?id=${favorite.id}`}
+        className='flex w-72 items-center gap-1 rounded-md border border-black bg-blue-50 px-4 py-2 transition-all [transition-duration:.3s] hover:bg-blue-100'
+      >
+        <Icons.BookOpen className='h-4 w-4' />
+        <div>{favorite.title}</div>
+      </Link>
+    )
+  }
+  return <div>Error, unknown favorite type: {favorite.type}</div>
 }

@@ -9,6 +9,7 @@ import { FocusManager, useFocuser } from '../components/focus-manager'
 import * as Icons from '../components/icons'
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
+import * as settings from '../utils/settings.server'
 
 interface Breadcrumb {
   id: string
@@ -35,6 +36,7 @@ export async function loader ({ request }: LoaderArgs) {
   const items = await db.loadItems()
 
   return json({
+    favorited: id ? settings.getFavorite('list', id) : false,
     items: populateChildren(
       items.filter(item => item.parentId == id),
       items
@@ -123,6 +125,14 @@ export async function action ({ context, params, request }: ActionArgs) {
       await db.outdent(id, parentId)
       break
     }
+    case 'toggleFavorite': {
+      const id = url.searchParams.get('id')
+      if (id) settings.toggleFavorite('list', id)
+      break
+    }
+    default: {
+      throw new Error('unknown action')
+    }
   }
 
   return null
@@ -162,7 +172,7 @@ function findSuitableDroparea (x: number, y: number): [HTMLAnchorElement, string
 
 export default function Index () {
   const [searchParams] = useSearchParams()
-  const { items, breadcrumbs } = useLoaderData<typeof loader>()
+  const { items, breadcrumbs, favorited } = useLoaderData<typeof loader>()
   const fetcher = useFetcher()
 
   const allItems: ItemMap = {}
@@ -218,7 +228,6 @@ export default function Index () {
         }}
       >
         <div id='dropzone' className='absolute -top-3 left-0 h-1 rounded-full bg-gray-500' />
-
         <div className='p-4 pb-96'>
           <h1 className='group flex items-center gap-4 pb-4'>
             <Link to='/' className='hover:text-blue-500'>
@@ -243,16 +252,16 @@ export default function Index () {
               ))}
               <li className='ml-2'>
                 <button
-                  className='rounded-full p-2 opacity-0 transition-all hover:bg-blue-200  group-hover:opacity-100'
+                  className='rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
                   onClick={() => fetcher.submit({ _action: 'export' }, { method: 'post' })}
                   title='Export items to clipboard'
                 >
                   <Icons.ArrowUpOnSquareStack className='h-4 w-4' />
                 </button>
               </li>
-              <li className=''>
+              <li>
                 <button
-                  className='rounded-full p-2 opacity-0 transition-all hover:bg-blue-200  group-hover:opacity-100'
+                  className='rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
                   onClick={async () => {
                     const data = await navigator.clipboard.readText()
                     fetcher.submit({ _action: 'import', data }, { method: 'post' })
@@ -262,6 +271,23 @@ export default function Index () {
                   <Icons.ArrowDownOnSquareStack className='h-4 w-4' />
                 </button>
               </li>
+              {!!searchParams.get('id') && (
+                <li>
+                  <button
+                    className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
+                    onClick={async () =>
+                      fetcher.submit({ _action: 'toggleFavorite' }, { method: 'post' })
+                    }
+                  >
+                    <Icons.Heart
+                      className={cx('h-4 w-4', {
+                        'fill-red-500': favorited,
+                        'transition-all group-hover/inner:fill-red-300': !favorited
+                      })}
+                    />
+                  </button>
+                </li>
+              )}
             </ul>
           </h1>
 
