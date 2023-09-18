@@ -4,28 +4,56 @@ import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
 
+import { DndContext, useDragger } from '../components/dnd'
+import { FavoriteLink } from '../components/favorite'
 import * as Icons from '../components/icons'
+import type { Favorite } from '../utils/settings.server'
 import * as settings from '../utils/settings.server'
 
-export function loader () {
+export async function loader () {
   const value = settings.getAll()
-  return json(value)
+  const favorites = await settings.getAllFavorites()
+  return json({ ...value, favorites })
 }
 
 export async function action ({ request }: ActionArgs) {
   const form = await request.formData()
-  const key = form.get('key')
-  const value = form.get('value')
-  if (typeof key !== 'string' || typeof value !== 'string') return
-  switch (key) {
-    case 'darkmode':
-      settings.update('darkmode', value === 'true')
+  switch (form.get('_action')) {
+    case 'updateSetting': {
+      const key = form.get('key')
+      const value = form.get('value')
+      if (typeof key !== 'string' || typeof value !== 'string') return
+      switch (key) {
+        case 'darkmode':
+          settings.update('darkmode', value === 'true')
+          break
+        case 'datadir':
+        case 'name':
+        case 'color':
+          settings.update(key, value)
+          break
+        default: {
+          throw new Error('unknown setting key')
+        }
+      }
+    }
+    case 'removeFavorite': {
+      const type = form.get('type')
+      const id = form.get('id')
+      if (typeof type !== 'string' || typeof id !== 'string') return
+      settings.toggleFavorite(type, id)
       break
-    case 'datadir':
-    case 'name':
-    case 'color':
-      settings.update(key, value)
+    }
+    case 'reorderFavorite': {
+      const index = +(form.get('index') || 'NaN')
+      const to = +(form.get('to') || 'NaN')
+      if (isNaN(index) || isNaN(to)) return
+      settings.reorderFavorite(index, to)
       break
+    }
+    default: {
+      throw new Error('unknown action')
+    }
   }
   return null
 }
@@ -34,7 +62,7 @@ export default function Settings () {
   const data = useLoaderData<typeof loader>()
   const fetcher = useFetcher()
   return (
-    <div className='flex max-w-sm flex-col gap-4 p-4'>
+    <div className='flex max-w-md flex-col gap-4 p-4'>
       <h1 className='flex items-center gap-4 pb-4 text-2xl'>
         <Link to='/' className='hover:text-blue-500'>
           <Icons.HomeModern className='h-8 w-8' />
@@ -47,7 +75,10 @@ export default function Settings () {
         label='Dark mode'
         enabled={data.darkmode}
         onChange={() =>
-          fetcher.submit({ key: 'darkmode', value: !data.darkmode }, { method: 'post' })
+          fetcher.submit(
+            { _action: 'updateSetting', key: 'darkmode', value: !data.darkmode },
+            { method: 'post' }
+          )
         }
       />
       <Input
@@ -55,22 +86,116 @@ export default function Settings () {
         label='Data directory'
         value={data.datadir}
         onChange={e =>
-          fetcher.submit({ key: 'datadir', value: e.target.value }, { method: 'post' })
+          fetcher.submit(
+            { _action: 'updateSetting', key: 'datadir', value: e.target.value },
+            { method: 'post' }
+          )
         }
       />
       <Input
         id='name'
         label='Name'
         value={data.name}
-        onChange={e => fetcher.submit({ key: 'name', value: e.target.value }, { method: 'post' })}
+        onChange={e =>
+          fetcher.submit(
+            { _action: 'updateSetting', key: 'name', value: e.target.value },
+            { method: 'post' }
+          )
+        }
       />
       <Input
         id='color'
         label='Color'
         type='color'
         value={data.color}
-        onChange={e => fetcher.submit({ key: 'color', value: e.target.value }, { method: 'post' })}
+        onChange={e =>
+          fetcher.submit(
+            { _action: 'updateSetting', key: 'color', value: e.target.value },
+            { method: 'post' }
+          )
+        }
       />
+      <div>Favorites</div>
+      <DndContext
+        onMove={e => {
+          const dropzone = document.getElementById('dropzone')
+          const y = window.scrollY + e.clientY - dropzone?.parentNode?.offsetTop
+          let to = Math.floor((y + 36) / 64)
+          if (to < 0) to = 0
+          if (to > data.favorites.length) to = data.favorites.length
+          if (dropzone) dropzone.style.top = -4 + 64 * to + 'px'
+          return { to }
+        }}
+        onDrop={(e, state, dragItem) => {
+          if (!state) return
+          const dropzone = document.getElementById('dropzone')
+          if (dropzone) dropzone.style.top = '-9999px'
+          if (dragItem.index === state.to) return
+          if (dragItem.index === state.to - 1) return
+          fetcher.submit(
+            { _action: 'reorderFavorite', index: dragItem.index, to: state.to },
+            { method: 'post' }
+          )
+        }}
+        onCancel={() => {
+          const dropzone = document.getElementById('dropzone')
+          if (dropzone) dropzone.style.top = '-9999px'
+        }}
+      >
+        <div className='relative'>
+          <div
+            id='dropzone'
+            className='absolute left-5 top-[-9999px] h-1 w-96 rounded-full bg-gray-500'
+          />
+          <FavoriteSettings favorites={data.favorites} />
+        </div>
+      </DndContext>
+    </div>
+  )
+}
+
+interface FavoriteSettingsProps {
+  favorites: Favorite[]
+}
+
+function FavoriteSettings ({ favorites }: FavoriteSettingsProps) {
+  const fetcher = useFetcher()
+  const ctx = useDragger()
+  if (!ctx) return null
+  const { startDrag, dragItem } = ctx
+  return (
+    <div className='flex flex-col gap-1'>
+      {favorites.map((f, index) => (
+        <div
+          key={`${f.type}-${f.id}`}
+          className={cx(
+            'flex items-center gap-4 rounded-lg p-2 transition-all [&:has(.drag:hover)]:bg-gray-100',
+            { 'opacity-20': index === dragItem?.index }
+          )}
+          data-index={index}
+        >
+          <div
+            onMouseDown={e => {
+              e.preventDefault()
+              startDrag({ index })
+            }}
+          >
+            <Icons.Bars2 className='drag h-9 w-9 cursor-grab p-2' />
+          </div>
+          <FavoriteLink favorite={f} />
+          <button
+            className='rounded-md bg-red-200 p-3 hover:bg-red-400'
+            onClick={() =>
+              fetcher.submit(
+                { _action: 'removeFavorite', type: f.type, id: f.id },
+                { method: 'post' }
+              )
+            }
+          >
+            <Icons.Trash className='h-5 w-5' />
+          </button>
+        </div>
+      ))}
     </div>
   )
 }

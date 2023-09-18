@@ -63,3 +63,10 @@ export function toggleFavorite (type: string, id: string) {
   else favorites.splice(i, 1)
   config.set('favorites', favorites)
 }
+
+export function reorderFavorite (index: number, to: number) {
+  const favorites: Favorite[] = config.get('favorites') || []
+  const [fav] = favorites.splice(index, 1)
+  favorites.splice(to > index ? to - 1 : to, 0, fav)
+  config.set('favorites', favorites)
+}
