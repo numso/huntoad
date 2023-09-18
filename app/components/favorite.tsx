@@ -22,6 +22,14 @@ export function FavoriteLink ({ favorite }: FavoriteLinkProps) {
       </Link>
     )
   }
+  if (favorite.type === 'list-tag') {
+    return (
+      <Link to={`/list/${favorite.id}`} className={cx(favClasses, 'bg-blue-50 hover:bg-blue-100')}>
+        <Icons.BookOpen className='h-4 w-4' />
+        <div>#{favorite.id}</div>
+      </Link>
+    )
+  }
   if (favorite.type === 'markdown') {
     return (
       <Link
