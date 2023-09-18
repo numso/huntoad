@@ -115,41 +115,45 @@ export default function Settings () {
           )
         }
       />
-      <div>Favorites</div>
-      <DndContext
-        onMove={e => {
-          const dropzone = document.getElementById('dropzone')
-          const y = window.scrollY + e.clientY - dropzone?.parentNode?.offsetTop
-          let to = Math.floor((y + 36) / 64)
-          if (to < 0) to = 0
-          if (to > data.favorites.length) to = data.favorites.length
-          if (dropzone) dropzone.style.top = -4 + 64 * to + 'px'
-          return { to }
-        }}
-        onDrop={(e, state, dragItem) => {
-          if (!state) return
-          const dropzone = document.getElementById('dropzone')
-          if (dropzone) dropzone.style.top = '-9999px'
-          if (dragItem.index === state.to) return
-          if (dragItem.index === state.to - 1) return
-          fetcher.submit(
-            { _action: 'reorderFavorite', index: dragItem.index, to: state.to },
-            { method: 'post' }
-          )
-        }}
-        onCancel={() => {
-          const dropzone = document.getElementById('dropzone')
-          if (dropzone) dropzone.style.top = '-9999px'
-        }}
-      >
-        <div className='relative'>
-          <div
-            id='dropzone'
-            className='absolute left-5 top-[-9999px] h-1 w-96 rounded-full bg-gray-500'
-          />
-          <FavoriteSettings favorites={data.favorites} />
-        </div>
-      </DndContext>
+      {!!data.favorites.length && (
+        <>
+          <div>Favorites</div>
+          <DndContext
+            onMove={e => {
+              const dropzone = document.getElementById('dropzone')
+              const y = window.scrollY + e.clientY - dropzone?.parentNode?.offsetTop
+              let to = Math.floor((y + 36) / 64)
+              if (to < 0) to = 0
+              if (to > data.favorites.length) to = data.favorites.length
+              if (dropzone) dropzone.style.top = -4 + 64 * to + 'px'
+              return { to }
+            }}
+            onDrop={(e, state, dragItem) => {
+              if (!state) return
+              const dropzone = document.getElementById('dropzone')
+              if (dropzone) dropzone.style.top = '-9999px'
+              if (dragItem.index === state.to) return
+              if (dragItem.index === state.to - 1) return
+              fetcher.submit(
+                { _action: 'reorderFavorite', index: dragItem.index, to: state.to },
+                { method: 'post' }
+              )
+            }}
+            onCancel={() => {
+              const dropzone = document.getElementById('dropzone')
+              if (dropzone) dropzone.style.top = '-9999px'
+            }}
+          >
+            <div className='relative'>
+              <div
+                id='dropzone'
+                className='absolute left-5 top-[-9999px] h-1 w-96 rounded-full bg-gray-500'
+              />
+              <FavoriteSettings favorites={data.favorites} />
+            </div>
+          </DndContext>
+        </>
+      )}
     </div>
   )
 }
