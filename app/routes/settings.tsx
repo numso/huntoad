@@ -36,6 +36,7 @@ export async function action ({ request }: ActionArgs) {
           throw new Error('unknown setting key')
         }
       }
+      break
     }
     case 'removeFavorite': {
       const type = form.get('type')
