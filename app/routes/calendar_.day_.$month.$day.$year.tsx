@@ -1,10 +1,11 @@
-import type { LoaderArgs } from '@remix-run/node'
+import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { Link, useLoaderData } from '@remix-run/react'
+import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 
 import * as Icons from '../components/icons'
 import * as db from '../utils/db.server'
+import * as settings from '../utils/settings.server'
 
 const months = [
   'january',
@@ -36,7 +37,9 @@ export async function loader ({ params }: LoaderArgs) {
   const currentDate = new Date(year, monthNum, day)
   const prev = new Date(+currentDate - oneDayInMilliseconds)
   const next = new Date(+currentDate + oneDayInMilliseconds * 1.5)
+  const favorited = settings.getFavorite('calendar-day', `${month}/${day}/${year}`)
   return json({
+    favorited,
     items,
     month,
     day,
@@ -46,8 +49,26 @@ export async function loader ({ params }: LoaderArgs) {
   })
 }
 
+export async function action ({ request, params }: ActionArgs) {
+  const form = await request.formData()
+  switch (form.get('_action')) {
+    case 'toggleFavorite': {
+      const month = (params.month as string).toLowerCase()
+      const day = +(params.day as string)
+      const year = +(params.year as string)
+      settings.toggleFavorite('calendar-day', `${month}/${day}/${year}`)
+      break
+    }
+    default: {
+      throw new Error('unknown action')
+    }
+  }
+  return null
+}
+
 export default function Calendar () {
-  const { items, month, day, year, prevUrl, nextUrl } = useLoaderData<typeof loader>()
+  const { favorited, items, month, day, year, prevUrl, nextUrl } = useLoaderData<typeof loader>()
+  const fetcher = useFetcher()
   return (
     <div className='min-h-screen bg-gray-100'>
       <h1 className='group flex items-center bg-white p-4 text-2xl'>
@@ -75,6 +96,17 @@ export default function Calendar () {
         >
           Month View
         </Link>
+        <button
+          className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
+          onClick={async () => fetcher.submit({ _action: 'toggleFavorite' }, { method: 'post' })}
+        >
+          <Icons.Heart
+            className={cx('h-4 w-4', {
+              'fill-red-500': favorited,
+              'transition-all group-hover/inner:fill-red-300': !favorited
+            })}
+          />
+        </button>
       </h1>
       <div className='mx-auto my-10 max-w-2xl'>
         {items.map(item => {

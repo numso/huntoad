@@ -116,5 +116,38 @@ function FavoriteLink ({ favorite }: FavoriteLinkProps) {
       </Link>
     )
   }
+  if (favorite.type === 'calendar-day') {
+    return (
+      <Link
+        to={`/calendar/day/${favorite.id}`}
+        className={cx(favClasses, 'bg-purple-50 hover:bg-purple-100')}
+      >
+        <Icons.CalendarDays className='h-4 w-4' />
+        <div className='capitalize'>{favorite.id.replace('/', ' ').replace('/', ', ')}</div>
+      </Link>
+    )
+  }
+  if (favorite.type === 'calendar-week') {
+    return (
+      <Link
+        to={`/calendar/week/${favorite.id}`}
+        className={cx(favClasses, 'bg-purple-50 hover:bg-purple-100')}
+      >
+        <Icons.CalendarDays className='h-4 w-4' />
+        <div className='capitalize'>Week of {favorite.id.replace('/', ' ').replace('/', ', ')}</div>
+      </Link>
+    )
+  }
+  if (favorite.type === 'calendar-month') {
+    return (
+      <Link
+        to={`/calendar/month/${favorite.id}`}
+        className={cx(favClasses, 'bg-purple-50 hover:bg-purple-100')}
+      >
+        <Icons.CalendarDays className='h-4 w-4' />
+        <div className='capitalize'>{favorite.id.replace('/', ' ')}</div>
+      </Link>
+    )
+  }
   return <div>Error, unknown favorite type: {favorite.type}</div>
 }

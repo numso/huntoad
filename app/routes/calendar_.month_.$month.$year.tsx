@@ -1,11 +1,12 @@
-import type { LoaderArgs } from '@remix-run/node'
+import type { ActionArgs, LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { Link, useLoaderData } from '@remix-run/react'
+import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 
 import * as Icons from '../components/icons'
 import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
+import * as settings from '../utils/settings.server'
 
 const months = [
   'january',
@@ -29,7 +30,9 @@ export async function loader ({ params }: LoaderArgs) {
   if (isNaN(year) || year < 1970 || year > 3000) throw new Error('bad year')
   const monthNum = months.indexOf(month)
   const items = await db.getItemsForMonth(monthNum, year)
+  const favorited = settings.getFavorite('calendar-month', `${month}/${year}`)
   return json({
+    favorited,
     items,
     month,
     year,
@@ -39,15 +42,33 @@ export async function loader ({ params }: LoaderArgs) {
   })
 }
 
+export async function action ({ request, params }: ActionArgs) {
+  const form = await request.formData()
+  switch (form.get('_action')) {
+    case 'toggleFavorite': {
+      const month = (params.month as string).toLowerCase()
+      const year = +(params.year as string)
+      settings.toggleFavorite('calendar-month', `${month}/${year}`)
+      break
+    }
+    default: {
+      throw new Error('unknown action')
+    }
+  }
+  return null
+}
+
 export default function Calendar () {
-  const { items, month, year, monthNum, prevUrl, nextUrl } = useLoaderData<typeof loader>()
+  const { favorited, items, month, year, monthNum, prevUrl, nextUrl } =
+    useLoaderData<typeof loader>()
+  const fetcher = useFetcher()
   const firstDate = new Date(year, monthNum, 1)
   const lastDate = new Date(year, monthNum + 1, 0)
   const offset = firstDate.getDay()
   const days = [...new Array(lastDate.getDate())].map((_, i) => i + 1)
   return (
     <div className='min-h-screen bg-gray-100'>
-      <h1 className='flex items-center bg-white p-4 text-2xl'>
+      <h1 className='group flex items-center bg-white p-4 text-2xl'>
         <Link to='/' className='mr-8 hover:text-blue-500'>
           <Icons.HomeModern className='h-8 w-8' />
         </Link>
@@ -60,6 +81,17 @@ export default function Calendar () {
         <Link to={nextUrl} className='hover:text-blue-500'>
           <Icons.ChevronRight className='h-4 w-4' />
         </Link>
+        <button
+          className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
+          onClick={async () => fetcher.submit({ _action: 'toggleFavorite' }, { method: 'post' })}
+        >
+          <Icons.Heart
+            className={cx('h-4 w-4', {
+              'fill-red-500': favorited,
+              'transition-all group-hover/inner:fill-red-300': !favorited
+            })}
+          />
+        </button>
       </h1>
       <div className='my-10 w-full overflow-auto'>
         <div className='mx-auto grid w-full min-w-[600px] max-w-5xl grid-cols-7 gap-1'>
