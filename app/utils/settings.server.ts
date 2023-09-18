@@ -1,5 +1,6 @@
 import Conf from 'conf'
 
+import type { Item } from './db.server'
 import * as db from './db.server'
 
 const config = new Conf({
@@ -48,7 +49,21 @@ export function update (key: string, value: Setting): void {
 export async function getAllFavorites (): Promise<Favorite[]> {
   const items = await db.loadItems()
   const favorites: Favorite[] = config.get('favorites') || []
-  return favorites.map(f => ({ ...f, title: items.find(i => i.id === f.id)?.title }))
+  return favorites.map(f => ({ ...f, title: getFavoriteTitle(f, items) }))
+}
+
+function getFavoriteTitle (f: Favorite, items: Item[]): string {
+  if (f.title) return f.title
+  if (f.type === 'list-tag') return '#' + f.id
+  const calendar = capitalize(f.id.replace('/', ' ').replace('/', ', '))
+  if (f.type === 'calendar-day') return calendar
+  if (f.type === 'calendar-week') return 'Week of ' + calendar
+  if (f.type === 'calendar-month') return calendar
+  return items.find(i => i.id === f.id)?.title || ''
+}
+
+function capitalize (str: string): string {
+  return str[0].toUpperCase() + str.slice(1)
 }
 
 export function getFavorite (type: string, id: string): boolean {

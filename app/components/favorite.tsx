@@ -18,7 +18,7 @@ export function FavoriteLink ({ favorite }: FavoriteLinkProps) {
         className={cx(favClasses, 'bg-blue-50 hover:bg-blue-100')}
       >
         <Icons.BookOpen className='h-4 w-4' />
-        <div>{favorite.title}</div>
+        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>{favorite.title}</div>
       </Link>
     )
   }
@@ -26,7 +26,7 @@ export function FavoriteLink ({ favorite }: FavoriteLinkProps) {
     return (
       <Link to={`/list/${favorite.id}`} className={cx(favClasses, 'bg-blue-50 hover:bg-blue-100')}>
         <Icons.BookOpen className='h-4 w-4' />
-        <div>#{favorite.id}</div>
+        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>{favorite.title}</div>
       </Link>
     )
   }
@@ -37,7 +37,7 @@ export function FavoriteLink ({ favorite }: FavoriteLinkProps) {
         className={cx(favClasses, 'bg-green-50 hover:bg-green-100')}
       >
         <Icons.PencilSquare className='h-4 w-4' />
-        <div>{favorite.title}</div>
+        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>{favorite.title}</div>
       </Link>
     )
   }
@@ -48,7 +48,7 @@ export function FavoriteLink ({ favorite }: FavoriteLinkProps) {
         className={cx(favClasses, 'bg-purple-50 hover:bg-purple-100')}
       >
         <Icons.CalendarDays className='h-4 w-4' />
-        <div className='capitalize'>{favorite.id.replace('/', ' ').replace('/', ', ')}</div>
+        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>{favorite.title}</div>
       </Link>
     )
   }
@@ -59,7 +59,7 @@ export function FavoriteLink ({ favorite }: FavoriteLinkProps) {
         className={cx(favClasses, 'bg-purple-50 hover:bg-purple-100')}
       >
         <Icons.CalendarDays className='h-4 w-4' />
-        <div className='capitalize'>Week of {favorite.id.replace('/', ' ').replace('/', ', ')}</div>
+        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>{favorite.title}</div>
       </Link>
     )
   }
@@ -70,7 +70,7 @@ export function FavoriteLink ({ favorite }: FavoriteLinkProps) {
         className={cx(favClasses, 'bg-purple-50 hover:bg-purple-100')}
       >
         <Icons.CalendarDays className='h-4 w-4' />
-        <div className='capitalize'>{favorite.id.replace('/', ' ')}</div>
+        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>{favorite.title}</div>
       </Link>
     )
   }
