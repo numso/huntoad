@@ -187,7 +187,7 @@ export default function Index () {
 
   return (
     <FocusManager>
-      <DndContext
+      <DndContext<Item, [string, string]>
         onMove={e => {
           const droparea = findSuitableDroparea(
             window.scrollX + e.clientX,
@@ -339,9 +339,7 @@ interface ListItemProps {
   allItems: ItemMap
 }
 function ListItem ({ item, i, allItems }: ListItemProps) {
-  const ctx = useDragger()
-  if (!ctx) return null
-  const { startDrag, dragItem } = ctx
+  const { startDrag, dragItem } = useDragger<Item>()
   return (
     <li
       key={item.id}

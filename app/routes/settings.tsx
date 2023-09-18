@@ -119,7 +119,7 @@ export default function Settings () {
       {!!data.favorites.length && (
         <>
           <div>Favorites</div>
-          <DndContext
+          <DndContext<{ index: number }, { to: number }>
             onMove={e => {
               const dropzone = document.getElementById('dropzone')
               const y = window.scrollY + e.clientY - dropzone?.parentNode?.offsetTop
@@ -165,9 +165,7 @@ interface FavoriteSettingsProps {
 
 function FavoriteSettings ({ favorites }: FavoriteSettingsProps) {
   const fetcher = useFetcher()
-  const ctx = useDragger()
-  if (!ctx) return null
-  const { startDrag, dragItem } = ctx
+  const { startDrag, dragItem } = useDragger<{ index: number }>()
   return (
     <div className='flex flex-col gap-1'>
       {favorites.map((f, index) => (

@@ -1,36 +1,26 @@
 import React from 'react'
 
-import type { Item } from '../utils/db.server'
+const context = React.createContext<unknown>(null)
 
-type State = [string, string] | null
-type _Item = Item | null
-interface DndContext {
-  startDrag: (value: _Item) => void
-  dragItem: _Item
-}
-type _DndContext = DndContext | null
-
-const context = React.createContext<_DndContext>(null)
-
-interface DnDContextProps {
+interface DnDContextProps<DropState, DragItem> {
   children: React.ReactNode
-  onMove: (e: MouseEvent) => State
-  onDrop: (e: MouseEvent, state: State, dragging: Item) => void
+  onMove: (e: MouseEvent) => DropState | null
+  onDrop: (e: MouseEvent, state: DropState | null, dragging: DragItem) => void
   onCancel: () => void
 }
 
-export function DndContext ({
+export function DndContext <DragItem, DropState>({
   children,
   onMove,
   onDrop,
   onCancel
-}: DnDContextProps): React.ReactNode {
-  const [dragging, setDragging] = React.useState<_Item>(null)
-  const dragRef = React.useRef<_Item>(null)
+}: DnDContextProps<DropState, DragItem>): React.ReactNode {
+  const [dragging, setDragging] = React.useState<DragItem | null>(null)
+  const dragRef = React.useRef<DragItem | null>(null)
   dragRef.current = dragging
 
   React.useEffect(() => {
-    let state: State
+    let state: DropState | null
     function handleKeydown (e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setDragging(null)
@@ -65,6 +55,11 @@ export function DndContext ({
   )
 }
 
-export function useDragger (): _DndContext {
-  return React.useContext(context)
+interface ContextValue<DragItem> {
+  startDrag: (value: DragItem) => void
+  dragItem: DragItem | null
+}
+
+export function useDragger <DragItem>(): ContextValue<DragItem> {
+  return React.useContext(context) as ContextValue<DragItem>
 }
