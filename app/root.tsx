@@ -10,6 +10,7 @@ import {
   useLoaderData
 } from '@remix-run/react'
 
+import { Toaster } from './components/toasts'
 import styles from './tailwind.css'
 import * as settings from './utils/settings.server'
 
@@ -30,7 +31,9 @@ export default function App () {
         <Links />
       </head>
       <body className='dark:bg-gray-800 dark:text-white'>
-        <Outlet />
+        <Toaster>
+          <Outlet />
+        </Toaster>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

@@ -3,6 +3,7 @@ import { json } from '@remix-run/node'
 import { Form, Link, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
+import { useToast } from '~/components/toasts'
 
 import { DndContext, useDragger } from '../components/dnd'
 import { FocusManager, useFocuser } from '../components/focus-manager'
@@ -45,7 +46,7 @@ export async function loader ({ request }: LoaderArgs) {
   })
 }
 
-export async function action ({ context, params, request }: ActionArgs) {
+export async function action ({ request }: ActionArgs) {
   const form = await request.formData()
   const url = new URL(request.url)
 
@@ -174,6 +175,7 @@ export default function Index () {
   const [searchParams] = useSearchParams()
   const { items, breadcrumbs, favorited } = useLoaderData<typeof loader>()
   const fetcher = useFetcher()
+  const addToast = useToast()
 
   const allItems: ItemMap = {}
   allItems[searchParams.get('id') || 'ROOT'] = { children: items }
@@ -182,7 +184,7 @@ export default function Index () {
   React.useEffect(() => {
     if (!fetcher.data) return
     navigator.clipboard.writeText(fetcher.data.steris)
-    // send toast
+    addToast('Items copied to clipboard')
   }, [fetcher.data])
 
   return (
