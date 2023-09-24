@@ -14,13 +14,14 @@ import * as settings from '../utils/settings.server'
 
 interface Breadcrumb {
   id: string
-  label: string
+  title: string
+  completed: boolean
 }
 
 function getBreadcrumbs (items: Item[], id: string | null): Breadcrumb[] {
   const item = items.find(item => item.id == id)
   if (!item) return []
-  return [...getBreadcrumbs(items, item.parentId), { id: item.id, label: item.title }]
+  return [...getBreadcrumbs(items, item.parentId), item]
 }
 
 function populateChildren (items: Item[], allItems: Item[]): Item[] {
@@ -246,8 +247,15 @@ export default function Index () {
                 <React.Fragment key={crumb.id}>
                   <li className='px-4 text-gray-300'>/</li>
                   <li>
-                    <a className='hover:text-blue-500' href={`/list?id=${crumb.id}`}>
-                      {crumb.label}
+                    <a
+                      className={cx('hover:text-blue-500', {
+                        'text-gray-400': !crumb.title || crumb.completed,
+                        'italic ': !crumb.title,
+                        'line-through': crumb.completed
+                      })}
+                      href={`/list?id=${crumb.id}`}
+                    >
+                      {crumb.title || 'unnamed'}
                     </a>
                   </li>
                 </React.Fragment>
