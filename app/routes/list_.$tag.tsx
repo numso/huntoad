@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData, useParams } from '@remix-run/react'
 import cx from 'clsx'
@@ -7,7 +7,7 @@ import * as Icons from '../components/icons'
 import * as db from '../utils/db.server'
 import * as settings from '../utils/settings.server'
 
-export async function loader ({ params }: LoaderArgs) {
+export async function loader ({ params }: LoaderFunctionArgs) {
   const items = await db.loadItems()
   const favorited = settings.getFavorite('list-tag', params.tag as string)
   return json({
@@ -16,7 +16,7 @@ export async function loader ({ params }: LoaderArgs) {
   })
 }
 
-export async function action ({ request, params }: ActionArgs) {
+export async function action ({ request, params }: ActionFunctionArgs) {
   const form = await request.formData()
   switch (form.get('_action')) {
     case 'toggleFavorite': {

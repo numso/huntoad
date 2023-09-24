@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
@@ -14,13 +14,13 @@ export function links () {
   return [{ rel: 'stylesheet', href: styles }]
 }
 
-export async function loader ({ params }: LoaderArgs) {
+export async function loader ({ params }: LoaderFunctionArgs) {
   const item = await db.getItem(params.id as string)
   const favorited = settings.getFavorite('markdown', params.id as string)
   return json({ item, favorited })
 }
 
-export async function action ({ request, params }: ActionArgs) {
+export async function action ({ request, params }: ActionFunctionArgs) {
   const form = await request.formData()
 
   switch (form.get('_action')) {

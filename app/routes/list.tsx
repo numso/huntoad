@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Form, Link, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react'
 import cx from 'clsx'
@@ -31,7 +31,7 @@ function populateChildren (items: Item[], allItems: Item[]): Item[] {
   })
 }
 
-export async function loader ({ request }: LoaderArgs) {
+export async function loader ({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url)
   const id = url.searchParams.get('id')
   const items = await db.loadItems()
@@ -46,7 +46,7 @@ export async function loader ({ request }: LoaderArgs) {
   })
 }
 
-export async function action ({ request }: ActionArgs) {
+export async function action ({ request }: ActionFunctionArgs) {
   const form = await request.formData()
   const url = new URL(request.url)
 

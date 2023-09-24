@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
@@ -23,7 +23,7 @@ const months = [
   'december'
 ]
 
-export async function loader ({ params }: LoaderArgs) {
+export async function loader ({ params }: LoaderFunctionArgs) {
   const month = (params.month as string).toLowerCase()
   const year = +(params.year as string)
   if (months.indexOf(month) === -1) throw new Error('bad month')
@@ -42,7 +42,7 @@ export async function loader ({ params }: LoaderArgs) {
   })
 }
 
-export async function action ({ request, params }: ActionArgs) {
+export async function action ({ request, params }: ActionFunctionArgs) {
   const form = await request.formData()
   switch (form.get('_action')) {
     case 'toggleFavorite': {

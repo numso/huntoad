@@ -1,4 +1,4 @@
-import type { ActionArgs } from '@remix-run/node'
+import type { ActionFunctionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
@@ -16,7 +16,7 @@ export async function loader () {
   return json({ ...value, favorites })
 }
 
-export async function action ({ request }: ActionArgs) {
+export async function action ({ request }: ActionFunctionArgs) {
   const form = await request.formData()
   switch (form.get('_action')) {
     case 'updateSetting': {
