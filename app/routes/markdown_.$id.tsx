@@ -60,7 +60,7 @@ export default function Index () {
   return (
     <div>
       <h1
-        className={cx('group flex items-center gap-4 bg-gray-100 p-4 text-2xl', {
+        className={cx('group flex items-center gap-4 bg-gray-100 p-4 text-2xl dark:bg-gray-900', {
           'text-gray-500': !item.title || item.completed,
           'italic ': !item.title,
           'line-through': item.completed
@@ -73,18 +73,19 @@ export default function Index () {
         <span>{item.title || 'unnamed'}</span>
         <Link
           to={item.parentId ? `/list?id=${item.parentId}` : '/list'}
-          className='rounded-full bg-blue-100 p-1 opacity-0 transition-all group-hover:opacity-100'
+          className='rounded-full bg-blue-100 p-1 opacity-0 transition-all group-hover:opacity-100 dark:bg-blue-800'
         >
-          <Icons.ArrowUpLeft className='h-4 w-4 stroke-blue-500' />
+          <Icons.ArrowUpLeft className='h-4 w-4 stroke-blue-500 dark:stroke-blue-300' />
         </Link>
         <button
-          className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
+          className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100 dark:hover:bg-blue-800'
           onClick={async () => fetcher.submit({ _action: 'toggleFavorite' }, { method: 'post' })}
         >
           <Icons.Heart
             className={cx('h-4 w-4', {
               'fill-red-500': favorited,
-              'transition-all group-hover/inner:fill-red-300': !favorited
+              'transition-all group-hover/inner:fill-red-300 dark:group-hover/inner:fill-red-900':
+                !favorited
             })}
           />
         </button>

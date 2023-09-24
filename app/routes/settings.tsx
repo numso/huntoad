@@ -172,7 +172,7 @@ function FavoriteSettings ({ favorites }: FavoriteSettingsProps) {
         <div
           key={`${f.type}-${f.id}`}
           className={cx(
-            'flex items-center gap-4 rounded-lg p-2 transition-all [&:has(.drag:hover)]:bg-gray-100',
+            'flex items-center gap-4 rounded-lg p-2 transition-all [&:has(.drag:hover)]:bg-gray-100 [&:has(.drag:hover)]:dark:bg-gray-600',
             { 'opacity-20': index === dragItem?.index }
           )}
           data-index={index}
@@ -187,7 +187,7 @@ function FavoriteSettings ({ favorites }: FavoriteSettingsProps) {
           </div>
           <FavoriteLink favorite={f} />
           <button
-            className='rounded-md bg-red-200 p-3 hover:bg-red-400'
+            className='rounded-md bg-red-200 p-3 hover:bg-red-400 dark:bg-red-900 dark:hover:bg-red-800'
             onClick={() =>
               fetcher.submit(
                 { _action: 'removeFavorite', type: f.type, id: f.id },
@@ -214,7 +214,10 @@ interface InputProps {
 function Input ({ id, label, value, onChange, type = 'text' }: InputProps) {
   return (
     <div>
-      <label htmlFor={id} className='block text-sm font-medium leading-6 text-gray-900'>
+      <label
+        htmlFor={id}
+        className='block text-sm font-medium leading-6 text-gray-900 dark:text-white'
+      >
         {label}
       </label>
       <input
@@ -224,7 +227,7 @@ function Input ({ id, label, value, onChange, type = 'text' }: InputProps) {
         id={id}
         onChange={onChange}
         className={cx(
-          'block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6',
+          'block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-slate-700 dark:text-white dark:ring-slate-500 sm:text-sm sm:leading-6',
           { 'py-1.5': type === 'text' }
         )}
       />
@@ -296,7 +299,7 @@ function Toggle ({ id, enabled, onChange, label }: ToggleProps) {
         </span>
       </button>
 
-      <span className='ml-3 text-sm font-medium text-gray-900' id={id}>
+      <span className='ml-3 text-sm font-medium text-gray-900 dark:text-white' id={id}>
         {label}
       </span>
     </div>

@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 .EasyMDEContainer > :first-child {
+  @apply bg-gray-800 text-white;
   border: 0 !important;
   height: calc(100vh - 64px) !important;
 }

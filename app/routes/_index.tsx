@@ -27,7 +27,7 @@ export default function Index () {
           to='/list'
           label='Infinite List'
           description='Take all the notes!'
-          className='bg-blue-50 hover:bg-blue-100'
+          className='bg-blue-50 hover:bg-blue-100 dark:bg-blue-900 dark:hover:bg-blue-800'
         >
           <Icons.BookOpen className='h-20 w-20' />
         </FancyLink>
@@ -35,7 +35,7 @@ export default function Index () {
           to='/markdown'
           label='New Note'
           description='Jot down a more complex idea'
-          className='bg-green-50 hover:bg-green-100'
+          className='bg-green-50 hover:bg-green-100 dark:bg-green-900 dark:hover:bg-green-800'
         >
           <Icons.PencilSquare className='h-20 w-20' />
         </FancyLink>
@@ -43,7 +43,7 @@ export default function Index () {
           to='/calendar'
           label='Calendar View'
           description='See your items in a schedule'
-          className='bg-purple-50 hover:bg-purple-100'
+          className='bg-purple-50 hover:bg-purple-100 dark:bg-purple-900 dark:hover:bg-purple-800'
         >
           <Icons.CalendarDays className='h-20 w-20' />
         </FancyLink>
@@ -51,11 +51,15 @@ export default function Index () {
           to='/integrity'
           label='Integrity Check'
           description='Ensures data correctness'
-          className='bg-red-50 hover:bg-red-100'
+          className='bg-red-50 hover:bg-red-100 dark:bg-red-900 dark:hover:bg-red-800'
         >
           <Icons.WrenchScrewdriver className='h-20 w-20' />
         </FancyLink>
-        <FancyLink to='/settings' label='Settings' className='bg-yellow-50 hover:bg-yellow-100'>
+        <FancyLink
+          to='/settings'
+          label='Settings'
+          className='bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900 dark:hover:bg-yellow-800'
+        >
           <Icons.Cog6Tooth className='h-20 w-20' />
         </FancyLink>
       </div>
