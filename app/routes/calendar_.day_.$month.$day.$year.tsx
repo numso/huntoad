@@ -91,13 +91,13 @@ export default function Calendar () {
           Week View
         </Link>
         <Link
-          className='ml-4 rounded-md bg-blue-400 px-3 py-1 text-sm text-white opacity-0 transition-all hover:bg-blue-500 group-hover:opacity-100'
+          className='ml-2 rounded-md bg-blue-400 px-3 py-1 text-sm text-white opacity-0 transition-all hover:bg-blue-500 group-hover:opacity-100'
           to={`/calendar/month/${month}/${year}`}
         >
           Month View
         </Link>
         <button
-          className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
+          className='group/inner ml-2 rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
           onClick={async () => fetcher.submit({ _action: 'toggleFavorite' }, { method: 'post' })}
         >
           <Icons.Heart

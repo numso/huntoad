@@ -60,22 +60,24 @@ export default function Index () {
   return (
     <div>
       <h1
-        className={cx('group flex items-center gap-4 bg-gray-100 p-4 text-2xl dark:bg-gray-900', {
+        className={cx('group flex items-center bg-gray-100 p-4 text-2xl dark:bg-gray-900', {
           'text-gray-500': !item.title || item.completed,
           'italic ': !item.title,
           'line-through': item.completed
         })}
       >
-        <Link to='/' className='hover:text-blue-500'>
-          <Icons.HomeModern className='h-8 w-8' />
-        </Link>
-        <Icons.ChevronRight className='h-4 w-4' />
-        <span>{item.title || 'unnamed'}</span>
+        <div className='flex items-center gap-4'>
+          <Link to='/' className='hover:text-blue-500'>
+            <Icons.HomeModern className='h-8 w-8' />
+          </Link>
+          <Icons.ChevronRight className='h-4 w-4' />
+          <span>{item.title || 'unnamed'}</span>
+        </div>
         <Link
           to={item.parentId ? `/list?id=${item.parentId}` : '/list'}
-          className='rounded-full bg-blue-100 p-1 opacity-0 transition-all group-hover:opacity-100 dark:bg-blue-800'
+          className='ml-2 rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100 dark:bg-blue-800'
         >
-          <Icons.ArrowUpLeft className='h-4 w-4 stroke-blue-500 dark:stroke-blue-300' />
+          <Icons.ArrowUpLeft className='h-4 w-4 stroke-blue-600 dark:stroke-blue-300' />
         </Link>
         <button
           className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100 dark:hover:bg-blue-800'

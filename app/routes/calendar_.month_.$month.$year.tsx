@@ -82,7 +82,7 @@ export default function Calendar () {
           <Icons.ChevronRight className='h-4 w-4' />
         </Link>
         <button
-          className='group/inner rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
+          className='group/inner ml-2 rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
           onClick={async () => fetcher.submit({ _action: 'toggleFavorite' }, { method: 'post' })}
         >
           <Icons.Heart
