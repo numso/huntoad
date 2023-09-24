@@ -1,5 +1,5 @@
 /** @type {import('@remix-run/dev').AppConfig} */
-module.exports = {
+export default {
   tailwind: true,
   ignoredRouteFiles: ['**/.*'],
   // appDirectory: "app",
@@ -16,5 +16,5 @@ module.exports = {
     'when-exit',
     'mimic-fn'
   ],
-  serverModuleFormat: 'cjs'
+  serverModuleFormat: 'esm'
 }
