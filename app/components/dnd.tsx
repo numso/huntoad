@@ -9,6 +9,9 @@ interface DnDContextProps<DropState, DragItem> {
   onCancel: () => void
 }
 
+const OFFSET = 300
+const SPEED = 25
+
 export function DndContext <DragItem, DropState>({
   children,
   onMove,
@@ -25,15 +28,21 @@ export function DndContext <DragItem, DropState>({
       if (e.key === 'Escape') {
         setDragging(null)
         state = null
+        cancelScroll()
         onCancel()
       }
     }
     function handleMousemove (e: MouseEvent) {
       if (!dragRef.current) return
       state = onMove(e)
+      const height = window.innerHeight
+      if (e.clientY < OFFSET) scrollScreen(-((OFFSET - e.clientY) / SPEED))
+      else if (e.clientY > height - OFFSET) scrollScreen((e.clientY - height + OFFSET) / SPEED)
+      else cancelScroll()
     }
     function handleMouseup (e: MouseEvent) {
       if (!dragRef.current) return
+      cancelScroll()
       onDrop(e, state, dragRef.current)
       setDragging(null)
       state = null
@@ -53,6 +62,19 @@ export function DndContext <DragItem, DropState>({
       {children}
     </context.Provider>
   )
+}
+
+let animFrame: number
+function scrollScreen (amount: number) {
+  cancelScroll()
+  function doScroll () {
+    animFrame = requestAnimationFrame(doScroll)
+    window.scrollBy(0, amount)
+  }
+  animFrame = requestAnimationFrame(doScroll)
+}
+function cancelScroll () {
+  cancelAnimationFrame(animFrame)
 }
 
 interface ContextValue<DragItem> {
