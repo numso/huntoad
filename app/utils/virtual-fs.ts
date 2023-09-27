@@ -50,5 +50,6 @@ export async function rm (path: string) {
   }
   delete files[path]
   clearCache(path)
-  return fs.rm(path)
+  // because we debounce writes, we might be deleting an item that was never persisted to disk
+  return fs.rm(path).catch(() => null)
 }
