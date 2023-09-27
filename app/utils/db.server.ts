@@ -1,6 +1,7 @@
 import fm from 'front-matter'
-import fs from 'node:fs/promises'
 import * as uuid from 'uuid'
+
+import * as fs from './virtual-fs'
 
 interface FrontMatterObject {
   title: string
@@ -210,7 +211,7 @@ export async function deleteItem (id: string) {
     for (const child of children) child.parentId = prevSibling.id
     await reorder(children)
   }
-  doDeleteItem(item, items)
+  await doDeleteItem(item, items)
 }
 
 async function doDeleteItem (item: Item, items: Item[]) {

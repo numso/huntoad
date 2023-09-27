@@ -1,7 +1,6 @@
 import * as Icons from '../components/icons'
 
 export default function Index () {
-  console.log(Icons)
   return (
     <div className='flex flex-wrap'>
       {Object.keys(Icons).map(key => {
