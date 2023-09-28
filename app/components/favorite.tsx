@@ -1,8 +1,9 @@
 import { Link } from '@remix-run/react'
 import cx from 'clsx'
 
-import * as Icons from '../components/icons'
-import type { Favorite } from '../utils/settings.server'
+import type { Favorite } from '~/utils/settings.server'
+
+import * as Icons from './icons'
 
 interface FavoriteLinkProps {
   favorite: Favorite

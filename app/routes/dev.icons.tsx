@@ -1,4 +1,4 @@
-import * as Icons from '../components/icons'
+import * as Icons from '~/components/icons'
 
 export default function Index () {
   return (

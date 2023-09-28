@@ -3,10 +3,10 @@ import { json } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 
-import * as Icons from '../components/icons'
-import * as db from '../utils/db.server'
-import * as settings from '../utils/settings.server'
-import type { Item } from '../utils/types'
+import * as Icons from '~/components/icons'
+import * as db from '~/utils/db.server'
+import * as settings from '~/utils/settings.server'
+import type { Item } from '~/utils/types'
 
 const months = [
   'january',

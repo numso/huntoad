@@ -12,15 +12,15 @@ import {
 import cx from 'clsx'
 import React from 'react'
 import * as uuid from 'uuid'
-import { useToast } from '~/components/toasts'
 
-import { DndContext, useDragger } from '../components/dnd'
-import { FocusManager, useFocuser } from '../components/focus-manager'
-import * as Icons from '../components/icons'
-import * as db from '../utils/db.server'
-import * as listActions from '../utils/list-actions'
-import * as settings from '../utils/settings.server'
-import type { Item } from '../utils/types'
+import { DndContext, useDragger } from '~/components/dnd'
+import { FocusManager, useFocuser } from '~/components/focus-manager'
+import * as Icons from '~/components/icons'
+import { useToast } from '~/components/toasts'
+import * as db from '~/utils/db.server'
+import * as listActions from '~/utils/list-actions'
+import * as settings from '~/utils/settings.server'
+import type { Item } from '~/utils/types'
 
 interface Breadcrumb {
   id: string

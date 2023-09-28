@@ -2,9 +2,9 @@ import { json } from '@remix-run/node'
 import { Link, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 
-import { FavoriteLink } from '../components/favorite'
-import * as Icons from '../components/icons'
-import * as settings from '../utils/settings.server'
+import { FavoriteLink } from '~/components/favorite'
+import * as Icons from '~/components/icons'
+import * as settings from '~/utils/settings.server'
 
 export async function loader () {
   return json({

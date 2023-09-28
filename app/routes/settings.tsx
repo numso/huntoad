@@ -4,11 +4,11 @@ import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
 
-import { DndContext, useDragger } from '../components/dnd'
-import { FavoriteLink } from '../components/favorite'
-import * as Icons from '../components/icons'
-import type { Favorite } from '../utils/settings.server'
-import * as settings from '../utils/settings.server'
+import { DndContext, useDragger } from '~/components/dnd'
+import { FavoriteLink } from '~/components/favorite'
+import * as Icons from '~/components/icons'
+import type { Favorite } from '~/utils/settings.server'
+import * as settings from '~/utils/settings.server'
 
 export async function loader () {
   const value = settings.getAll()

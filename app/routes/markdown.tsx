@@ -1,6 +1,6 @@
 import { redirect } from '@remix-run/node'
 
-import * as db from '../utils/db.server'
+import * as db from '~/utils/db.server'
 
 export async function loader () {
   const allItems = await db.loadItems()

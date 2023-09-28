@@ -10,9 +10,10 @@ import {
   useLoaderData
 } from '@remix-run/react'
 
-import { Toaster } from './components/toasts'
+import { Toaster } from '~/components/toasts'
+import * as settings from '~/utils/settings.server'
+
 import styles from './tailwind.css'
-import * as settings from './utils/settings.server'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: styles }]
 

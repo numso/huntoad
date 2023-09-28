@@ -4,11 +4,11 @@ import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 import styles from 'easymde/dist/easymde.min.css'
 
-import { ClientOnly } from '../components/client-only'
-import * as Icons from '../components/icons'
-import { SimpleMdeReact } from '../components/md-editor.client'
-import * as db from '../utils/db.server'
-import * as settings from '../utils/settings.server'
+import { ClientOnly } from '~/components/client-only'
+import * as Icons from '~/components/icons'
+import { SimpleMdeReact } from '~/components/md-editor.client'
+import * as db from '~/utils/db.server'
+import * as settings from '~/utils/settings.server'
 
 export function links () {
   return [{ rel: 'stylesheet', href: styles }]
