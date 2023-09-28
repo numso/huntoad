@@ -1,6 +1,14 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
-import { Form, Link, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react'
+import type { Fetcher } from '@remix-run/react'
+import {
+  Form,
+  Link,
+  useFetcher,
+  useFetchers,
+  useLoaderData,
+  useSearchParams
+} from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
 import * as uuid from 'uuid'
@@ -10,6 +18,7 @@ import { DndContext, useDragger } from '../components/dnd'
 import { FocusManager, useFocuser } from '../components/focus-manager'
 import * as Icons from '../components/icons'
 import * as db from '../utils/db.server'
+import * as listActions from '../utils/list-actions'
 import * as settings from '../utils/settings.server'
 import type { Item } from '../utils/types'
 
@@ -33,18 +42,21 @@ function populateChildren (items: Item[], allItems: Item[]): Item[] {
   })
 }
 
+function flattenItems (items: Item[]): Item[] {
+  return items.flatMap(item => [{ ...item, children: [] }, ...flattenItems(item.children)])
+}
+
 export async function loader ({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url)
   const id = url.searchParams.get('id')
-  const items = await db.loadItems()
-
+  const allItems = await db.loadItems()
+  const relevantItems = allItems.filter(item => item.parentId == id)
+  const items = populateChildren(relevantItems, allItems)
+  const flattenedItems = flattenItems(items)
   return json({
     favorited: id ? settings.getFavorite('list', id) : false,
-    items: populateChildren(
-      items.filter(item => item.parentId == id),
-      items
-    ),
-    breadcrumbs: getBreadcrumbs(items, id)
+    items: flattenedItems,
+    breadcrumbs: getBreadcrumbs(allItems, id)
   })
 }
 
@@ -180,11 +192,56 @@ function findSuitableDroparea (x: number, y: number): [HTMLAnchorElement, string
   ]
 }
 
+function clone <T>(data: T): T {
+  return JSON.parse(JSON.stringify(data))
+}
+
+function optimisticUpdates (items: Item[], fetchers: Fetcher[]): Item[] {
+  let newItems = clone(items)
+  for (const f of fetchers) {
+    const form = f.formData
+    if (!form) continue
+    switch (form.get('_action')) {
+      case 'addItem': {
+        const id = form.get('id')
+        const newId = form.get('newId')
+        const position = form.get('position')
+        const title = form.get('title')
+        if (
+          typeof id !== 'string' ||
+          typeof position !== 'string' ||
+          typeof title !== 'string' ||
+          typeof newId !== 'string'
+        ) {
+          continue
+        }
+        const { item } = listActions.addItem(newItems, newId, id, title, +position)
+        newItems.push(item)
+        break
+      }
+      case 'deleteItem': {
+        const id = form.get('id')
+        if (typeof id !== 'string') continue
+        const resp = listActions.deleteItem(newItems, id)
+        if (resp) resp.item.deleted = true
+        break
+      }
+    }
+  }
+  newItems.sort((a, b) => a.order - b.order)
+  return newItems
+}
+
 export default function Index () {
   const [searchParams] = useSearchParams()
-  const { items, breadcrumbs, favorited } = useLoaderData<typeof loader>()
+  const { items: flattenedItems, breadcrumbs, favorited } = useLoaderData<typeof loader>()
   const fetcher = useFetcher()
+  const fetchers = useFetchers()
   const addToast = useToast()
+  const updatedItems = optimisticUpdates(flattenedItems, fetchers)
+  const id = searchParams.get('id')
+  const relevantItems = updatedItems.filter(item => item.parentId == id)
+  const items = populateChildren(relevantItems, updatedItems)
 
   const allItems: ItemMap = {}
   allItems[searchParams.get('id') || 'ROOT'] = { children: items }
@@ -364,7 +421,8 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
       key={item.id}
       data-dragging={item === dragItem}
       className={cx('-ml-6 transition-all', {
-        'bg-gray-200 dark:bg-gray-600': item === dragItem
+        'bg-gray-200 dark:bg-gray-600': item === dragItem,
+        'hidden ': item.deleted
       })}
     >
       <div className='group flex gap-2'>

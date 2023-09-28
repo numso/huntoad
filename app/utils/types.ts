@@ -6,6 +6,7 @@ export interface FrontMatterObject {
   parentId: string | null
   tags: string[]
   dates: string[]
+  deleted?: boolean
 }
 
 export type Item = FrontMatterObject & {
