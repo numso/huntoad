@@ -3,6 +3,7 @@ import { json } from '@remix-run/node'
 import { Form, Link, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react'
 import cx from 'clsx'
 import React from 'react'
+import * as uuid from 'uuid'
 import { useToast } from '~/components/toasts'
 
 import { DndContext, useDragger } from '../components/dnd'
@@ -68,11 +69,18 @@ export async function action ({ request }: ActionFunctionArgs) {
     }
     case 'addItem': {
       const id = form.get('id')
+      const newId = form.get('newId')
       const position = form.get('position')
       const title = form.get('title')
-      if (typeof id !== 'string' || typeof position !== 'string' || typeof title !== 'string')
+      if (
+        typeof id !== 'string' ||
+        typeof position !== 'string' ||
+        typeof title !== 'string' ||
+        typeof newId !== 'string'
+      ) {
         return
-      await db.addItem(id, +position, title)
+      }
+      await db.addItem(id, +position, title, newId)
       break
     }
     case 'moveItem': {
@@ -326,6 +334,7 @@ function List ({ items, root, rootId, allItems }: ListProps) {
         <li className='ml-8 mt-2'>
           <Form method='POST'>
             <input type='hidden' name='_action' value='addItem' />
+            <input type='hidden' name='newId' value={uuid.v4()} />
             <input type='hidden' name='id' value={rootId} />
             <input type='hidden' name='position' value={items.length} />
             <input type='hidden' name='title' value='' />
@@ -483,6 +492,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       return fetcher.submit(
         {
           _action: 'addItem',
+          newId: uuid.v4(),
           position: i,
           title,
           id: item.parentId || ''

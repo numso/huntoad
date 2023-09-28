@@ -132,11 +132,16 @@ export async function setCollapsed (id: string, collapsed: boolean) {
   await fs.writeFile(p, newContents)
 }
 
-export async function addItem (parentId: string | null, position: number, title: string) {
+export async function addItem (
+  parentId: string | null,
+  position: number,
+  title: string,
+  newId: string
+) {
   if (!parentId) parentId = null
   const items = await loadItems()
   const newItem = {
-    id: uuid.v4(),
+    id: newId,
     parentId,
     title,
     tags: parseTags(title),
