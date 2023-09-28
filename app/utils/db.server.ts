@@ -1,6 +1,7 @@
 import fm from 'front-matter'
 import * as uuid from 'uuid'
 
+import * as listActions from './list-actions'
 import type { FrontMatterObject, Item } from './types'
 import * as fs from './virtual-fs'
 
@@ -123,36 +124,10 @@ export async function addItem (
   title: string,
   newId: string
 ) {
-  if (!parentId) parentId = null
   const items = await loadItems()
-  const newItem = {
-    id: newId,
-    parentId,
-    title,
-    tags: parseTags(title),
-    dates: parseDates(title)
-  }
-  const siblings = items.filter(i => i.parentId == parentId)
-  const sibling = siblings[position]
-  const siblingChildren = sibling ? items.filter(i => i.parentId === sibling.id) : []
-
-  if (siblingChildren.length && !sibling.collapsed && !title) {
-    newItem.parentId = sibling.id
-    siblingChildren.unshift(newItem)
-    await reorder(siblingChildren)
-  } else {
-    siblings.splice(position + 1, 0, newItem)
-    if (sibling && title) {
-      sibling.title = sibling.title.slice(0, -title.length)
-      sibling.tags = parseTags(sibling.title)
-      sibling.dates = parseDates(sibling.title)
-      for (const child of siblingChildren) child.parentId = newItem.id
-      await reorder(siblingChildren)
-    }
-    await reorder(siblings)
-  }
-
-  return newItem
+  const resp = listActions.addItem(items, newId, parentId, title, position)
+  await persist(resp.persist)
+  return resp.item
 }
 
 export async function moveItem (dragId: string, dropId: string, direction: string) {
@@ -185,34 +160,22 @@ export async function moveItem (dragId: string, dropId: string, direction: strin
 
 export async function deleteItem (id: string) {
   const items = await loadItems()
-  const item = items.find(i => i.id == id)
-  if (!item) return
-  const children = items.filter(i => i.parentId === item.id)
-  if (item.title || children.length) {
-    const siblings = items.filter(i => i.parentId === item.parentId)
-    const index = siblings.findIndex(i => i.id == id)
-    if (index === 0) return
-    const prevSibling = siblings[index - 1]
-    const prevChildren = items.filter(i => i.parentId == prevSibling.id)
-    if (prevChildren.length) return
-    prevSibling.title += item.title
-    prevSibling.tags = parseTags(prevSibling.title)
-    prevSibling.dates = parseDates(prevSibling.title)
-    for (const child of children) child.parentId = prevSibling.id
-    await reorder(children)
-  }
-  await doDeleteItem(item, items)
-}
-
-async function doDeleteItem (item: Item, items: Item[]) {
-  await fs.rm(`./data/${item.id}.md`)
-  const children = items.filter(i => i.parentId === item.parentId && i.id !== item.id)
-  await reorder(children)
+  const resp = listActions.deleteItem(items, id)
+  if (!resp) return
+  await fs.rm(`./data/${resp.item.id}.md`)
+  await persist(resp.persist)
 }
 
 async function reorder (children: Item[]) {
   for (let i = 0; i < children.length; ++i) {
     children[i].order = i
+    const [id, contents] = encode(children[i])
+    await fs.writeFile(`./data/${id}.md`, contents)
+  }
+}
+
+async function persist (children: Item[]) {
+  for (let i = 0; i < children.length; ++i) {
     const [id, contents] = encode(children[i])
     await fs.writeFile(`./data/${id}.md`, contents)
   }
@@ -287,18 +250,9 @@ export async function importFromSteris (parentId: string, data: string) {
   if (a !== '---' || c !== '---' || !b.startsWith('title: ')) throw new Error('invalid format, 1')
   const title = b.replace('title: ', '')
   const id = uuid.v4()
-  const parent = {
-    id,
-    collapsed: false,
-    completed: false,
-    tags: parseTags(title),
-    dates: parseDates(title),
-    title,
-    children: fromSteris(rawItems, id, ''),
-    body: '',
-    order: siblings.length,
-    parentId
-  }
+  const parent = listActions.newItem(id, parentId, title)
+  parent.children = fromSteris(rawItems, id, '')
+  parent.order = siblings.length
   const newItems = flattenItems(parent)
   for (const item of newItems) {
     const [id, contents] = encode(item)
@@ -339,18 +293,12 @@ function parseItem (data: string[], indent: string, parentId: string, i: number)
   const collapsed = title[0] === '<'
   const completed = title[3] === 'x'
   title = title.slice(6)
-  return {
-    id: uuid.v4(),
-    collapsed,
-    completed,
-    tags: parseTags(title),
-    dates: parseDates(title),
-    title,
-    children: [],
-    body,
-    order: i,
-    parentId
-  }
+  const item = listActions.newItem(uuid.v4(), parentId, title)
+  item.collapsed = collapsed
+  item.completed = completed
+  item.body = body
+  item.order = i
+  return item
 }
 
 interface StringKeyMap {
