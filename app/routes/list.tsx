@@ -160,8 +160,15 @@ export async function action ({ request }: ActionFunctionArgs) {
   return null
 }
 
+interface ItemIsh {
+  id?: string
+  parentId?: string | null
+  collapsed?: boolean
+  children: ItemIsh[]
+}
+
 interface ItemMap {
-  [key: string]: Item
+  [key: string]: ItemIsh
 }
 
 function buildIdMap (items: Item[], obj: ItemMap) {
@@ -232,10 +239,14 @@ function optimisticUpdates (items: Item[], fetchers: Fetcher[]): Item[] {
   return newItems
 }
 
+interface SterisData {
+  steris: string
+}
+
 export default function Index () {
   const [searchParams] = useSearchParams()
   const { items: flattenedItems, breadcrumbs, favorited } = useLoaderData<typeof loader>()
-  const fetcher = useFetcher()
+  const fetcher = useFetcher<SterisData>()
   const fetchers = useFetchers()
   const addToast = useToast()
   const updatedItems = optimisticUpdates(flattenedItems, fetchers)
@@ -709,7 +720,7 @@ const FrozenDiv = React.memo(
   () => true
 )
 
-function getNextItem (item: Item, items: ItemMap, root = false): Item | null {
+function getNextItem (item: ItemIsh, items: ItemMap, root = false): ItemIsh | null {
   if (root && item.children.length && !item.collapsed) return item.children[0]
   if (!item.id) return null
   const parentItem = items[item.parentId || 'ROOT']
@@ -718,7 +729,7 @@ function getNextItem (item: Item, items: ItemMap, root = false): Item | null {
   return getNextItem(parentItem, items)
 }
 
-function getPrevItem (item: Item, items: ItemMap): Item | null {
+function getPrevItem (item: ItemIsh, items: ItemMap): ItemIsh | null {
   const parentItem = items[item.parentId || 'ROOT']
   const myIndex = parentItem.children.findIndex(i => i.id == item.id)
   if (myIndex === 0) return parentItem.id ? parentItem : null
@@ -726,7 +737,7 @@ function getPrevItem (item: Item, items: ItemMap): Item | null {
   return furthestGrandchild(prevSibling)
 }
 
-function furthestGrandchild (item: Item): Item {
+function furthestGrandchild (item: ItemIsh): ItemIsh {
   if (item.collapsed) return item
   const lastChild = item.children.at(-1)
   return lastChild ? furthestGrandchild(lastChild) : item
