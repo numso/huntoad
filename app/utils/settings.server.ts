@@ -1,7 +1,7 @@
 import Conf from 'conf'
 
-import type { Item } from './db.server'
 import * as db from './db.server'
+import type { Item } from './types'
 
 const config = new Conf({
   projectName: 'huntoad',

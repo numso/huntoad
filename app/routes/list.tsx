@@ -9,9 +9,9 @@ import { useToast } from '~/components/toasts'
 import { DndContext, useDragger } from '../components/dnd'
 import { FocusManager, useFocuser } from '../components/focus-manager'
 import * as Icons from '../components/icons'
-import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
 import * as settings from '../utils/settings.server'
+import type { Item } from '../utils/types'
 
 interface Breadcrumb {
   id: string

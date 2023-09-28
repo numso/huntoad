@@ -2,8 +2,8 @@ import { json } from '@remix-run/node'
 import { Link, useLoaderData } from '@remix-run/react'
 
 import * as Icons from '../components/icons'
-import type { Item } from '../utils/db.server'
 import * as db from '../utils/db.server'
+import type { Item } from '../utils/types'
 
 interface LabelMap {
   [key: string]: string

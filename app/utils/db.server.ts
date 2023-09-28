@@ -1,23 +1,8 @@
 import fm from 'front-matter'
 import * as uuid from 'uuid'
 
+import type { FrontMatterObject, Item } from './types'
 import * as fs from './virtual-fs'
-
-interface FrontMatterObject {
-  title: string
-  order: number
-  completed: boolean
-  collapsed: boolean
-  parentId: string | null
-  tags: string[]
-  dates: string[]
-}
-
-export type Item = FrontMatterObject & {
-  id: string
-  body: string
-  children: Item[]
-}
 
 export async function loadItems (): Promise<Item[]> {
   const files = await fs.readdir('./data', 'utf-8')
