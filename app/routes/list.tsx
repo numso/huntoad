@@ -591,7 +591,8 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     if (e.key === 'ArrowDown' || (e.key === 'ArrowRight' && startPos === value.length)) {
       e.preventDefault()
       const nextItem = getNextItem(item, allItems, true)
-      focus(nextItem?.id, 'start')
+      if (nextItem) focus(nextItem.id, 'start')
+      else focus(item.id, 'end')
       return
     }
   }
@@ -666,7 +667,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
             { method: 'post' }
           )
         }}
-        className={cx('bg-transparent py-1 outline-none', {
+        className={cx('bg-transparent py-1 outline-none [overflow-wrap:anywhere]', {
           'text-gray-400 line-through': item.completed
         })}
       />
@@ -690,7 +691,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
           )
         }}
         className={cx(
-          'bg-transparent text-xs text-gray-400 outline-none focus:not-sr-only focus:w-full',
+          'bg-transparent text-xs text-gray-400 outline-none [overflow-wrap:anywhere] focus:not-sr-only focus:w-full',
           { 'sr-only': !item.body }
         )}
       />

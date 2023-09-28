@@ -319,8 +319,6 @@ function formatValue (value: string | string[] | boolean | number): string {
   if (typeof value == 'boolean') return '' + value
   if (typeof value == 'number') return '' + value
   if (typeof value == 'string') return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-  if (Array.isArray(value)) {
-    return ['', ...value.map(tag => `  - ${tag}`)].join('\n')
-  }
+  if (Array.isArray(value)) return ['', ...value.map(tag => `  - ${formatValue(tag)}`)].join('\n')
   throw new Error('unknown value type')
 }

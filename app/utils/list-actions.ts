@@ -75,10 +75,10 @@ export function newItem (id: string, parentId: string | null, title: string): It
   }
 }
 
-function parseTags (title: string): string[] {
+export function parseTags (title: string): string[] {
   return [...new Set([...title.matchAll(/#([\S]+)/g)].map(a => a[1]))]
 }
 
-function parseDates (title: string): string[] {
+export function parseDates (title: string): string[] {
   return [...new Set([...title.matchAll(/:(\d{1,2}-\d{1,2}-\d{4})/g)].map(a => a[1]))]
 }
