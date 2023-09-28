@@ -223,7 +223,8 @@ function optimisticUpdates (items: Item[], fetchers: Fetcher[]): Item[] {
           continue
         }
         const { item } = listActions.addItem(newItems, newId, id, title, +position)
-        newItems.push(item)
+        const existing = newItems.find(i => i.id === newId)
+        if (!existing) newItems.push(item)
         break
       }
       case 'deleteItem': {
@@ -393,6 +394,7 @@ interface ListProps {
 
 function List ({ items, root, rootId, allItems }: ListProps) {
   const { focusAfterMount } = useFocuser('--')
+  const newId = uuid.v4()
   return (
     <ul className={cx('ml-16', { 'border-l': !root })}>
       {items.map((item, i) => (
@@ -402,13 +404,13 @@ function List ({ items, root, rootId, allItems }: ListProps) {
         <li className='ml-8 mt-2'>
           <Form method='POST'>
             <input type='hidden' name='_action' value='addItem' />
-            <input type='hidden' name='newId' value={uuid.v4()} />
+            <input type='hidden' name='newId' value={newId} />
             <input type='hidden' name='id' value={rootId} />
             <input type='hidden' name='position' value={items.length} />
             <input type='hidden' name='title' value='' />
             <button
               type='submit'
-              onClick={() => focusAfterMount('new', 'start')}
+              onClick={() => focusAfterMount(newId, 'start')}
               className='flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-300 dark:hover:bg-gray-600'
             >
               +
@@ -557,11 +559,12 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
       const title = value.slice(startPos || 0)
       input.textContent = value.slice(0, startPos || 0)
 
-      focusAfterMount('new', 'start')
+      const newId = uuid.v4()
+      focusAfterMount(newId, 'start')
       return fetcher.submit(
         {
           _action: 'addItem',
-          newId: uuid.v4(),
+          newId,
           position: i,
           title,
           id: item.parentId || ''
