@@ -6,7 +6,7 @@
   "scripts": {
     "build": "remix build",
     "dev": "remix dev",
-    "start": "remix-serve build",
+    "start": "remix-serve build/index.js",
     "typecheck": "tsc",
     "postinstall": "patch-package"
   },
@@ -47,7 +47,6 @@
       "@trivago/prettier-plugin-sort-imports",
       "prettier-plugin-tailwindcss"
     ],
-    "pluginSearchDirs": false,
     "importOrder": [
       "<THIRD_PARTY_MODULES>",
       "^[~/]",
