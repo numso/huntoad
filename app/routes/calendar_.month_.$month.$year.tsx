@@ -142,7 +142,7 @@ function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
   const day = new Date().getDate()
   return (
     <div
-      className={cx('relative aspect-square bg-white transition-all hover:bg-yellow-50', day === date && 'bg-yellow-100')}
+      className={cx('relative aspect-square transition-all hover:bg-yellow-50', day === date ? 'bg-yellow-100' : 'bg-white')}
       data-week-anchor={weekAnchor}
       data-week-num={weekNum}
     >
