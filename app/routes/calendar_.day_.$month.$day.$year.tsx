@@ -70,8 +70,8 @@ export default function Calendar () {
   const { favorited, items, month, day, year, prevUrl, nextUrl } = useLoaderData<typeof loader>()
   const fetcher = useFetcher()
   return (
-    <div className='min-h-screen bg-gray-100'>
-      <h1 className='group flex items-center bg-white p-4 text-2xl'>
+    <div className='min-h-screen bg-gray-100 dark:bg-gray-900'>
+      <h1 className='group flex items-center bg-white p-4 text-2xl dark:bg-gray-700'>
         <Link to='/' className='mr-8 hover:text-blue-500'>
           <Icons.HomeModern className='h-8 w-8' />
         </Link>
