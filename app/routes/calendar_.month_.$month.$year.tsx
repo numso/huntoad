@@ -67,8 +67,8 @@ export default function Calendar () {
   const offset = firstDate.getDay()
   const days = [...new Array(lastDate.getDate())].map((_, i) => i + 1)
   return (
-    <div className='min-h-screen bg-gray-100'>
-      <h1 className='group flex items-center bg-white p-4 text-2xl'>
+    <div className='min-h-screen bg-gray-100 dark:bg-gray-900'>
+      <h1 className='group flex items-center bg-white dark:bg-gray-700 p-4 text-2xl'>
         <Link to='/' className='mr-8 hover:text-blue-500'>
           <Icons.HomeModern className='h-8 w-8' />
         </Link>
@@ -94,7 +94,7 @@ export default function Calendar () {
         </button>
       </h1>
       <div className='my-10 w-full overflow-auto'>
-        <div className='mx-auto grid w-full min-w-[600px] max-w-5xl grid-cols-7 gap-1'>
+        <div className='mx-auto grid w-full min-w-[600px] max-w-5xl grid-cols-7 gap-1 dark:bg-gray-700'>
           {!!offset && (
             <div
               className='relative'
@@ -142,7 +142,7 @@ function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
   const day = new Date().getDate()
   return (
     <div
-      className={cx('relative aspect-square transition-all hover:bg-yellow-50', day === date ? 'bg-yellow-100' : 'bg-white')}
+      className={cx('relative aspect-square transition-all dark:bg-gray-900 dark:hover:bg-blue-100 hover:bg-yellow-50', day === date ? 'bg-yellow-100 dark:bg-blue-300' : 'bg-white')}
       data-week-anchor={weekAnchor}
       data-week-num={weekNum}
     >

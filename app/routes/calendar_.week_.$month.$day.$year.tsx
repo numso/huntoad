@@ -80,8 +80,8 @@ export default function Calendar () {
   const days = [0, 1, 2, 3, 4, 5, 6]
   const firstDate = new Date(year, monthNum, day)
   return (
-    <div className='min-h-screen bg-gray-100'>
-      <h1 className='group flex items-center bg-white p-4 text-2xl'>
+    <div className='min-h-screen bg-gray-100 dark:bg-gray-900'>
+      <h1 className='group flex items-center bg-white p-4 text-2xl dark:bg-gray-700'>
         <Link to='/' className='mr-8 hover:text-blue-500'>
           <Icons.HomeModern className='h-8 w-8' />
         </Link>
@@ -119,7 +119,7 @@ export default function Calendar () {
           const month = months[date.getMonth()]
           const myItems = items.filter(item => item.dates.map(d => +new Date(d)).includes(+date))
           return (
-            <div key={day} className='bg-white'>
+            <div key={day} className='bg-white dark:bg-gray-700'>
               <div className='text-center text-lg font-medium'>
                 {date.toLocaleDateString('en-US', { weekday: 'long' })}
               </div>
