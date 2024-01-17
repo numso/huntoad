@@ -34,10 +34,23 @@ function getBreadcrumbs (items: Item[], id: string | null): Breadcrumb[] {
   return [...getBreadcrumbs(items, item.parentId), item]
 }
 
-function populateChildren (items: Item[], allItems: Item[]): Item[] {
+interface ItemsMap {
+  [key: string]: Item[]
+}
+
+function keyByParentId (items: Item[]): ItemsMap {
+  const itemMap: ItemsMap = {}
+  for (let item of items) {
+    itemMap[item.parentId || 'ROOT'] = itemMap[item.parentId || 'ROOT'] || []
+    itemMap[item.parentId || 'ROOT'].push(item)
+  }
+  return itemMap
+}
+
+function populateChildren (items: Item[]): Item[] {
+  const itemMap = keyByParentId(items)
   return items.map(item => {
-    item.children = allItems.filter(i => i.parentId == item.id)
-    item.children = populateChildren(item.children, allItems)
+    item.children = itemMap[item.id] || []
     return item
   })
 }
@@ -50,8 +63,8 @@ export async function loader ({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url)
   const id = url.searchParams.get('id')
   const allItems = await db.loadItems()
-  const relevantItems = allItems.filter(item => item.parentId == id)
-  const items = populateChildren(relevantItems, allItems)
+  const populated = populateChildren(allItems)
+  const items = populated.filter(item => item.parentId == id)
   const flattenedItems = flattenItems(items)
   return json({
     favorited: id ? settings.getFavorite('list', id) : false,
@@ -252,8 +265,8 @@ export default function Index () {
   const addToast = useToast()
   const updatedItems = optimisticUpdates(flattenedItems, fetchers)
   const id = searchParams.get('id')
-  const relevantItems = updatedItems.filter(item => item.parentId == id)
-  const items = populateChildren(relevantItems, updatedItems)
+  const populated = populateChildren(updatedItems)
+  const items = populated.filter(item => item.parentId == id)
 
   const allItems: ItemMap = {}
   allItems[searchParams.get('id') || 'ROOT'] = { children: items }
