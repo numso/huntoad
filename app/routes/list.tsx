@@ -16,6 +16,7 @@ import * as uuid from 'uuid'
 import { DndContext, useDragger } from '~/components/dnd'
 import { FocusManager, useFocuser } from '~/components/focus-manager'
 import * as Icons from '~/components/icons'
+import { useShortcut } from '~/components/shortcuts'
 import { useToast } from '~/components/toasts'
 import * as db from '~/utils/db.server'
 import * as listActions from '~/utils/list-actions'
@@ -258,7 +259,7 @@ interface SterisData {
 }
 
 export default function Index () {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { items: flattenedItems, breadcrumbs, favorited } = useLoaderData<typeof loader>()
   const fetcher = useFetcher<SterisData>()
   const fetchers = useFetchers()
@@ -277,6 +278,11 @@ export default function Index () {
     navigator.clipboard.writeText(fetcher.data.steris)
     addToast('Items copied to clipboard')
   }, [fetcher.data])
+
+  useShortcut('Escape', () => {
+    // TODO:: remember and preserve focus when returning
+    document.getElementById('search')?.focus()
+  })
 
   return (
     <FocusManager>
@@ -389,9 +395,34 @@ export default function Index () {
                 </li>
               )}
             </ul>
+            <div className='flex-1' />
+            <div className='relative rounded-md shadow-sm'>
+              <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
+                <Icons.MagnifyingGlass className='h-4 w-4 text-gray-400' />
+              </div>
+              <input
+                id='search'
+                type='search'
+                className='block w-full rounded-md border-0 py-1 pl-9 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6'
+                placeholder='Search...'
+                onChange={e =>
+                  setSearchParams(prevParams => {
+                    if (e.target.value) prevParams.set('search', e.target.value)
+                    else prevParams.delete('search')
+                    return prevParams
+                  })
+                }
+              />
+            </div>
           </h1>
 
-          <List items={items} allItems={allItems} root rootId={searchParams.get('id') || ''} />
+          <List
+            items={items}
+            allItems={allItems}
+            root
+            rootId={searchParams.get('id') || ''}
+            search={searchParams.get('search') || ''}
+          />
         </div>
       </DndContext>
     </FocusManager>
@@ -403,15 +434,16 @@ interface ListProps {
   allItems: ItemMap
   root?: boolean
   rootId?: string
+  search: string
 }
 
-function List ({ items, root, rootId, allItems }: ListProps) {
+function List ({ items, root, rootId, allItems, search }: ListProps) {
   const { focusAfterMount } = useFocuser('--')
   const newId = uuid.v4()
   return (
     <ul className={cx('ml-16', { 'border-l': !root })}>
       {items.map((item, i) => (
-        <ListItem key={item.id} item={item} i={i} allItems={allItems} />
+        <ListItem key={item.id} item={item} i={i} allItems={allItems} search={search} />
       ))}
       {root && (
         <li className='ml-8 mt-2'>
@@ -439,8 +471,9 @@ interface ListItemProps {
   item: Item
   i: number
   allItems: ItemMap
+  search: string
 }
-function ListItem ({ item, i, allItems }: ListItemProps) {
+function ListItem ({ item, i, allItems, search }: ListItemProps) {
   const { startDrag, dragItem } = useDragger<Item>()
   return (
     <li
@@ -501,7 +534,7 @@ function ListItem ({ item, i, allItems }: ListItemProps) {
         </a>
         <SuperInput item={item} i={i} allItems={allItems} />
       </div>
-      {!item.collapsed && <List items={item.children} allItems={allItems} />}
+      {!item.collapsed && <List items={item.children} allItems={allItems} search={search} />}
     </li>
   )
 }

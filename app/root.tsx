@@ -13,6 +13,7 @@ import {
 import { Toaster } from '~/components/toasts'
 import * as settings from '~/utils/settings.server'
 
+import { Shortcuts } from './components/shortcuts'
 import styles from './tailwind.css'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: styles }]
@@ -32,9 +33,11 @@ export default function App () {
         <Links />
       </head>
       <body className='dark:bg-gray-800 dark:text-white'>
-        <Toaster>
-          <Outlet />
-        </Toaster>
+        <Shortcuts>
+          <Toaster>
+            <Outlet />
+          </Toaster>
+        </Shortcuts>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
