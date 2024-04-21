@@ -102,6 +102,8 @@ async function setup () {
         throw new Error(`UNKNOWN STATE: ${type}`)
       }
     }
+
+    g.io.emit('refresh')
   })
 }
 

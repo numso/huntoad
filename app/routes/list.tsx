@@ -8,6 +8,7 @@ import {
   useFetcher,
   useFetchers,
   useLoaderData,
+  useRevalidator,
   useSearchParams
 } from '@remix-run/react'
 import cx from 'clsx'
@@ -272,8 +273,6 @@ interface SharePath {
   share: string
 }
 
-global.FIRST_RENDER = true
-
 export default function Index () {
   const [searchParams, setSearchParams] = useSearchParams()
   const {
@@ -283,9 +282,12 @@ export default function Index () {
     connected
   } = useLoaderData<typeof loader>()
   const fetcher = useFetcher<SterisData>()
+  const revalidator = useRevalidator()
   const actionData = useActionData<SharePath>()
   React.useEffect(() => {
-    global.FIRST_RENDER = false
+    window.socket.on('refresh', () => {
+      revalidator.revalidate()
+    })
   }, [])
 
   const fetchers = useFetchers()
@@ -812,7 +814,7 @@ type DivProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HT
 type FrozenDivProps = DivProps & { onKeyDownRef: React.MutableRefObject<HandleKeyDown | undefined> }
 
 function FrozenDiv ({ onKeyDownRef, value, ...props }: FrozenDivProps) {
-  const valueRef = React.useRef(global.FIRST_RENDER ? { __html: value } : undefined)
+  const valueRef = React.useRef({ __html: value })
   const ref = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
     if (document.activeElement == ref.current) return
