@@ -1,25 +1,31 @@
 import fm from 'front-matter'
+import path from 'node:path'
 import * as uuid from 'uuid'
 
 import * as listActions from './list-actions'
+import * as sync from './sync.server'
 import type { FrontMatterObject, Item } from './types'
 import * as fs from './virtual-fs'
 
 export async function loadItems (): Promise<Item[]> {
-  const files = await fs.readdir('./data', 'utf-8')
+  const files = await fs.readdir('/', 'utf-8')
   const items = []
   for (const file of files) {
     if (file === '.keep') continue
-    const raw = await fs.readFile(`./data/${file}`, 'utf-8')
+    const raw = await fs.readFile(file.replace('.md', ''), 'utf-8')
     items.push(decode(raw, file))
   }
   items.sort((a, b) => a.order - b.order)
   return items
 }
 
-export async function getItem (id: string): Promise<Item> {
-  const raw = await fs.readFile(`./data/${id}.md`, 'utf-8')
-  return decode(raw, id)
+export async function getItem (id: string): Promise<Item | null> {
+  try {
+    const raw = await fs.readFile(id, 'utf-8')
+    return decode(raw, id)
+  } catch {
+    return null
+  }
 }
 
 const oneDayInMilliseconds = 24 * 60 * 60 * 1000
@@ -55,7 +61,7 @@ export async function getItemsForDay (month: number, day: number, year: number) 
   })
 }
 
-function decode (raw: string, file: string): Item {
+export function decode (raw: string, file: string): Item {
   const formatted = fm<FrontMatterObject>(raw)
   if (!formatted.attributes.tags) formatted.attributes.tags = []
   if (!formatted.attributes.dates) formatted.attributes.dates = []
@@ -67,7 +73,7 @@ function decode (raw: string, file: string): Item {
   }
 }
 
-function encode (item: Item): [string, string] {
+export function encode (item: Item): [string, string] {
   const { id, body, children, ...attributes } = item
   return [id, `${writeFrontMatter(attributes)}\n${body || ''}`]
 }
@@ -81,41 +87,62 @@ function parseDates (title: string): string[] {
 }
 
 export async function updateTitle (id: string, title: string) {
-  const p = `./data/${id}.md`
-  const contents = await fs.readFile(p, 'utf-8')
+  const contents = await fs.readFile(id, 'utf-8')
   const res = fm<FrontMatterObject>(contents)
   res.attributes.title = title
   res.attributes.tags = parseTags(title)
   res.attributes.dates = parseDates(title)
   const newContents = `${writeFrontMatter(res.attributes)}\n${res.body}`
-  await fs.writeFile(p, newContents)
+  await fs.writeFile(id, newContents)
 }
 
 export async function updateBody (id: string, body: string) {
-  const p = `./data/${id}.md`
-  const raw = await fs.readFile(p, 'utf-8')
+  const raw = await fs.readFile(id, 'utf-8')
   const item = decode(raw, id)
   item.body = body
   const [, contents] = encode(item)
-  await fs.writeFile(p, contents)
+  await fs.writeFile(id, contents)
 }
 
 export async function setCompleted (id: string, completed: boolean) {
-  const p = `./data/${id}.md`
-  const contents = await fs.readFile(p, 'utf-8')
+  const contents = await fs.readFile(id, 'utf-8')
   const res = fm<FrontMatterObject>(contents)
   res.attributes.completed = completed
   const newContents = `${writeFrontMatter(res.attributes)}\n${res.body}`
-  await fs.writeFile(p, newContents)
+  await fs.writeFile(id, newContents)
 }
 
 export async function setCollapsed (id: string, collapsed: boolean) {
-  const p = `./data/${id}.md`
-  const contents = await fs.readFile(p, 'utf-8')
+  const contents = await fs.readFile(id, 'utf-8')
   const res = fm<FrontMatterObject>(contents)
   res.attributes.collapsed = collapsed
   const newContents = `${writeFrontMatter(res.attributes)}\n${res.body}`
-  await fs.writeFile(p, newContents)
+  await fs.writeFile(id, newContents)
+}
+
+export async function share (id: string) {
+  const items = await loadItems()
+  function populateChildren (item: Item): void {
+    item.children = items.filter(i => i.parentId == item.id)
+    item.children.map(populateChildren)
+  }
+  const item = items.find(i => i.id == id)
+  if (item?.share) return item.share
+  populateChildren(item)
+  const shareItems = flattenItems(item)
+  const shareMap = {}
+  for (const item of shareItems) {
+    const [id, contents] = encode(item)
+    shareMap[id] = { id, contents }
+  }
+  const secret = await sync.share(id, shareMap)
+  const contents = await fs.readFile(id, 'utf-8')
+  const res = fm<FrontMatterObject>(contents)
+  res.attributes.share = secret
+  res.attributes.share_type = 'host'
+  const newContents = `${writeFrontMatter(res.attributes)}\n${res.body}`
+  await fs.writeFile(id, newContents)
+  return secret
 }
 
 export async function addItem (
@@ -162,7 +189,7 @@ export async function deleteItem (id: string) {
   const items = await loadItems()
   const resp = listActions.deleteItem(items, id)
   if (!resp) return
-  await fs.rm(`./data/${resp.item.id}.md`)
+  await fs.rm(resp.item.id)
   await persist(resp.persist)
 }
 
@@ -170,14 +197,14 @@ async function reorder (children: Item[]) {
   for (let i = 0; i < children.length; ++i) {
     children[i].order = i
     const [id, contents] = encode(children[i])
-    await fs.writeFile(`./data/${id}.md`, contents)
+    await fs.writeFile(id, contents)
   }
 }
 
 async function persist (children: Item[]) {
   for (let i = 0; i < children.length; ++i) {
     const [id, contents] = encode(children[i])
-    await fs.writeFile(`./data/${id}.md`, contents)
+    await fs.writeFile(id, contents)
   }
 }
 
@@ -256,7 +283,7 @@ export async function importFromSteris (parentId: string, data: string) {
   const newItems = flattenItems(parent)
   for (const item of newItems) {
     const [id, contents] = encode(item)
-    await fs.writeFile(`./data/${id}.md`, contents)
+    await fs.writeFile(id, contents)
   }
 }
 

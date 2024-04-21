@@ -11,10 +11,10 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@remix-run/css-bundle": "2.0.1",
-    "@remix-run/node": "2.0.1",
-    "@remix-run/react": "2.0.1",
-    "@remix-run/serve": "2.0.1",
+    "@remix-run/css-bundle": "2.8.1",
+    "@remix-run/node": "2.8.1",
+    "@remix-run/react": "2.8.1",
+    "@remix-run/serve": "2.8.1",
     "clsx": "2.0.0",
     "conf": "11.0.2",
     "front-matter": "4.0.2",
@@ -22,6 +22,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-simplemde-editor": "5.2.0",
+    "socket.io-client": "^4.7.5",
     "uuid": "9.0.1"
   },
   "devDependencies": {

@@ -4,11 +4,12 @@ import cx from 'clsx'
 
 import { FavoriteLink } from '~/components/favorite'
 import * as Icons from '~/components/icons'
+import * as db from '~/utils/db.server'
 import * as settings from '~/utils/settings.server'
 
 export async function loader () {
   return json({
-    favorites: await settings.getAllFavorites()
+    favorites: await settings.getAllFavorites(db)
   })
 }
 

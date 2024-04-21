@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
-import { json } from '@remix-run/node'
+import { json, redirect } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 import styles from 'easymde/dist/easymde.min.css'
@@ -16,6 +16,7 @@ export function links () {
 
 export async function loader ({ params }: LoaderFunctionArgs) {
   const item = await db.getItem(params.id as string)
+  if (!item) return redirect('/list')
   const favorited = settings.getFavorite('markdown', params.id as string)
   return json({ item, favorited })
 }

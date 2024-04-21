@@ -7,13 +7,17 @@ import React from 'react'
 import { DndContext, useDragger } from '~/components/dnd'
 import { FavoriteLink } from '~/components/favorite'
 import * as Icons from '~/components/icons'
+import * as db from '~/utils/db.server'
 import type { Favorite } from '~/utils/settings.server'
 import * as settings from '~/utils/settings.server'
+import * as sync from '~/utils/sync.server'
+import * as fs from '~/utils/virtual-fs'
 
 export async function loader () {
   const value = settings.getAll()
-  const favorites = await settings.getAllFavorites()
-  return json({ ...value, favorites })
+  const favorites = await settings.getAllFavorites(db)
+  const shareConnected = await sync.init(value.shareserver, db, fs)
+  return json({ ...value, favorites, shareConnected })
 }
 
 export async function action ({ request }: ActionFunctionArgs) {
@@ -28,6 +32,7 @@ export async function action ({ request }: ActionFunctionArgs) {
           settings.update('darkmode', value === 'true')
           break
         case 'datadir':
+        case 'shareserver':
         case 'name':
         case 'color':
           settings.update(key, value)
@@ -62,6 +67,9 @@ export async function action ({ request }: ActionFunctionArgs) {
 export default function Settings () {
   const data = useLoaderData<typeof loader>()
   const fetcher = useFetcher()
+  const testingServer =
+    ['submitting', 'loading'].includes(fetcher.state) &&
+    fetcher.formData.get('key') === 'shareserver'
   return (
     <div className='flex max-w-md flex-col gap-4 p-4'>
       <h1 className='flex items-center gap-4 pb-4 text-2xl'>
@@ -93,6 +101,25 @@ export default function Settings () {
           )
         }
       />
+      <Input
+        id='shareserver'
+        label='Share Server'
+        value={data.shareserver}
+        onChange={e =>
+          fetcher.submit(
+            { _action: 'updateSetting', key: 'shareserver', value: e.target.value },
+            { method: 'post' }
+          )
+        }
+      >
+        {testingServer ? (
+          <Icons.ArrowPath className='w-4 h-4 text-yellow-500 animate-spin' />
+        ) : data.shareConnected ? (
+          <Icons.Check className='w-4 h-4 text-green-500' />
+        ) : (
+          <Icons.XMark className='w-4 h-4 text-red-500' />
+        )}
+      </Input>
       <Input
         id='name'
         label='Name'
@@ -209,9 +236,10 @@ interface InputProps {
   value: string
   type?: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  children?: React.ReactNode
 }
 
-function Input ({ id, label, value, onChange, type = 'text' }: InputProps) {
+function Input ({ id, label, value, onChange, type = 'text', children }: InputProps) {
   return (
     <div>
       <label
@@ -220,17 +248,20 @@ function Input ({ id, label, value, onChange, type = 'text' }: InputProps) {
       >
         {label}
       </label>
-      <input
-        type={type}
-        defaultValue={value}
-        name={id}
-        id={id}
-        onChange={onChange}
-        className={cx(
-          'block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-slate-700 dark:text-white dark:ring-slate-500 sm:text-sm sm:leading-6',
-          { 'py-1.5': type === 'text' }
-        )}
-      />
+      <div className='flex items-center gap-2'>
+        <input
+          type={type}
+          defaultValue={value}
+          name={id}
+          id={id}
+          onChange={onChange}
+          className={cx(
+            'block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-slate-700 dark:text-white dark:ring-slate-500 sm:text-sm sm:leading-6',
+            { 'py-1.5': type === 'text' }
+          )}
+        />
+        {children}
+      </div>
     </div>
   )
 }

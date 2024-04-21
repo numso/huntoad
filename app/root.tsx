@@ -10,15 +10,19 @@ import {
   useLoaderData
 } from '@remix-run/react'
 
+import { Shortcuts } from '~/components/shortcuts'
 import { Toaster } from '~/components/toasts'
+import * as db from '~/utils/db.server'
 import * as settings from '~/utils/settings.server'
+import * as sync from '~/utils/sync.server'
+import * as fs from '~/utils/virtual-fs'
 
-import { Shortcuts } from './components/shortcuts'
 import styles from './tailwind.css'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: styles }]
 
-export function loader () {
+export async function loader () {
+  await sync.init(settings.get('shareserver') as string, db, fs)
   return json({ darkmode: settings.get('darkmode') })
 }
 

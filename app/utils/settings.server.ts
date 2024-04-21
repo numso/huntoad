@@ -1,13 +1,13 @@
 import Conf from 'conf'
 
-import * as db from './db.server'
 import type { Item } from './types'
 
 const config = new Conf({
-  projectName: 'huntoad',
+  projectName: process.env.PROJECT_NAME || 'huntoad',
   defaults: {
     darkmode: false,
     datadir: process.cwd() + '/data',
+    shareserver: '',
     favorites: [],
     name: 'Toad Hunter ' + `${Math.floor(Math.random() * 9999)}`.padStart(4, '0'),
     color:
@@ -27,6 +27,7 @@ export interface Favorite {
 interface Settings {
   darkmode: boolean
   datadir: string
+  shareserver: string
   favorites: Favorite[]
   name: string
   color: string
@@ -46,8 +47,11 @@ export function update (key: string, value: Setting): void {
   config.set(key, value)
 }
 
-export async function getAllFavorites (): Promise<Favorite[]> {
-  const items = await db.loadItems()
+export async function getAllFavorites (db): Promise<Favorite[]> {
+  let items = []
+  try {
+    items = await db.loadItems()
+  } catch {}
   const favorites: Favorite[] = config.get('favorites') || []
   return favorites.map(f => ({ ...f, title: getFavoriteTitle(f, items) }))
 }

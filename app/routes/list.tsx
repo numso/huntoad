@@ -4,6 +4,7 @@ import type { Fetcher } from '@remix-run/react'
 import {
   Form,
   Link,
+  useActionData,
   useFetcher,
   useFetchers,
   useLoaderData,
@@ -21,11 +22,13 @@ import { useToast } from '~/components/toasts'
 import * as db from '~/utils/db.server'
 import * as listActions from '~/utils/list-actions'
 import * as settings from '~/utils/settings.server'
+import * as sync from '~/utils/sync.server'
 import type { Item } from '~/utils/types'
 
 interface Breadcrumb {
   id: string
   title: string
+  share: string
   completed: boolean
 }
 
@@ -68,6 +71,7 @@ export async function loader ({ request }: LoaderFunctionArgs) {
   const items = populated.filter(item => item.parentId == id)
   const flattenedItems = flattenItems(items)
   return json({
+    connected: sync.connected(),
     favorited: id ? settings.getFavorite('list', id) : false,
     items: flattenedItems,
     breadcrumbs: getBreadcrumbs(allItems, id)
@@ -108,6 +112,12 @@ export async function action ({ request }: ActionFunctionArgs) {
       }
       await db.addItem(id, +position, title, newId)
       break
+    }
+    case 'share': {
+      const id = form.get('id')
+      if (typeof id !== 'string') return
+      const secret = await db.share(id)
+      return json({ share: `${settings.get('shareserver')}/share/${id}/${secret}` })
     }
     case 'moveItem': {
       const dragId = form.get('dragId')
@@ -258,10 +268,26 @@ interface SterisData {
   steris: string
 }
 
+interface SharePath {
+  share: string
+}
+
+global.FIRST_RENDER = true
+
 export default function Index () {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { items: flattenedItems, breadcrumbs, favorited } = useLoaderData<typeof loader>()
+  const {
+    items: flattenedItems,
+    breadcrumbs,
+    favorited,
+    connected
+  } = useLoaderData<typeof loader>()
   const fetcher = useFetcher<SterisData>()
+  const actionData = useActionData<SharePath>()
+  React.useEffect(() => {
+    global.FIRST_RENDER = false
+  }, [])
+
   const fetchers = useFetchers()
   const addToast = useToast()
   const updatedItems = optimisticUpdates(flattenedItems, fetchers)
@@ -274,10 +300,16 @@ export default function Index () {
   buildIdMap(items, allItems)
 
   React.useEffect(() => {
-    if (!fetcher.data) return
+    if (!fetcher.data?.steris) return
     navigator.clipboard.writeText(fetcher.data.steris)
     addToast('Items copied to clipboard')
   }, [fetcher.data])
+
+  React.useEffect(() => {
+    if (!actionData?.share) return
+    navigator.clipboard.writeText(actionData.share)
+    addToast('Share link copied to clipboard')
+  }, [actionData])
 
   useShortcut('Escape', () => {
     // TODO:: remember and preserve focus when returning
@@ -334,23 +366,28 @@ export default function Index () {
             </Link>
             <Icons.ChevronRight className='h-4 w-4' />
             <ul className='flex items-center'>
-              <li>
+              <li className='pr-2'>
                 <Link to='/list' className='hover:text-blue-500'>
                   <Icons.BookOpen className='h-6 w-6' />
                 </Link>
               </li>
               {breadcrumbs.map(crumb => (
                 <React.Fragment key={crumb.id}>
-                  <li className='px-4 text-gray-300'>/</li>
+                  <li className='px-2 text-gray-300'>/</li>
                   <li>
                     <a
-                      className={cx('hover:text-blue-500', {
-                        'text-gray-400': !crumb.title || crumb.completed,
-                        'italic ': !crumb.title,
-                        'line-through': crumb.completed
-                      })}
+                      className={cx(
+                        'hover:text-blue-500 px-2 py-0.5 rounded flex items-center gap-2  ',
+                        {
+                          'text-gray-400': !crumb.title || crumb.completed,
+                          'italic ': !crumb.title,
+                          'line-through': crumb.completed,
+                          'bg-blue-200': !!crumb.share
+                        }
+                      )}
                       href={`/list?id=${crumb.id}`}
                     >
+                      {!!crumb.share && <Icons.Share className='w-3 h-3' />}
                       {crumb.title || 'unnamed'}
                     </a>
                   </li>
@@ -416,13 +453,16 @@ export default function Index () {
             </div>
           </h1>
 
-          <List
-            items={items}
-            allItems={allItems}
-            root
-            rootId={searchParams.get('id') || ''}
-            search={searchParams.get('search') || ''}
-          />
+          <div className='-ml-10'>
+            <List
+              connected={connected}
+              items={items}
+              allItems={allItems}
+              root
+              rootId={searchParams.get('id') || ''}
+              search={searchParams.get('search') || ''}
+            />
+          </div>
         </div>
       </DndContext>
     </FocusManager>
@@ -430,6 +470,7 @@ export default function Index () {
 }
 
 interface ListProps {
+  connected: boolean
   items: Item[]
   allItems: ItemMap
   root?: boolean
@@ -437,13 +478,20 @@ interface ListProps {
   search: string
 }
 
-function List ({ items, root, rootId, allItems, search }: ListProps) {
+function List ({ connected, items, root, rootId, allItems, search }: ListProps) {
   const { focusAfterMount } = useFocuser('--')
   const newId = uuid.v4()
   return (
-    <ul className={cx('ml-16', { 'border-l': !root })}>
+    <ul className={cx('ml-[94px]', { 'border-l': !root })}>
       {items.map((item, i) => (
-        <ListItem key={item.id} item={item} i={i} allItems={allItems} search={search} />
+        <ListItem
+          key={item.id}
+          item={item}
+          i={i}
+          allItems={allItems}
+          search={search}
+          connected={connected}
+        />
       ))}
       {root && (
         <li className='ml-8 mt-2'>
@@ -468,23 +516,38 @@ function List ({ items, root, rootId, allItems, search }: ListProps) {
 }
 
 interface ListItemProps {
+  connected: boolean
   item: Item
   i: number
   allItems: ItemMap
   search: string
 }
-function ListItem ({ item, i, allItems, search }: ListItemProps) {
+function ListItem ({ connected, item, i, allItems, search }: ListItemProps) {
   const { startDrag, dragItem } = useDragger<Item>()
   return (
     <li
       key={item.id}
       data-dragging={item === dragItem}
-      className={cx('-ml-6 transition-all', {
+      className={cx('ml-[-52px] transition-all', {
         'bg-gray-200 dark:bg-gray-600': item === dragItem,
         'hidden ': item.deleted
       })}
     >
       <div className='group flex gap-2'>
+        {connected ? (
+          <Form method='POST'>
+            <input type='hidden' name='_action' value='share' />
+            <input type='hidden' name='id' value={item.id} />
+            <button
+              type='submit'
+              className='mt-1.5 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100 dark:hover:bg-gray-600'
+            >
+              <Icons.Share className='h-3 w-3' />
+            </button>
+          </Form>
+        ) : (
+          <div className='w-5' />
+        )}
         <Form method='POST'>
           <input type='hidden' name='_action' value='setCompleted' />
           <input type='hidden' name='id' value={item.id} />
@@ -523,7 +586,8 @@ function ListItem ({ item, i, allItems, search }: ListItemProps) {
           href={`/list?id=${item.id}`}
           className={cx(
             'dz mt-1.5 flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-400 dark:hover:bg-gray-600',
-            { 'bg-gray-300 dark:bg-gray-500': item.collapsed }
+            { 'bg-gray-300 dark:bg-gray-500': !item.share && item.collapsed },
+            { 'bg-blue-300': !!item.share }
           )}
           onMouseDown={e => {
             e.preventDefault()
@@ -534,7 +598,9 @@ function ListItem ({ item, i, allItems, search }: ListItemProps) {
         </a>
         <SuperInput item={item} i={i} allItems={allItems} />
       </div>
-      {!item.collapsed && <List items={item.children} allItems={allItems} search={search} />}
+      {!item.collapsed && (
+        <List items={item.children} allItems={allItems} search={search} connected={connected} />
+      )}
     </li>
   )
 }
@@ -697,27 +763,10 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     }
   }
 
-  React.useEffect(() => {
-    const el = document.getElementById(`item-${item.id}`) as HTMLDivElement
-    if (item.completed) {
-      el.classList.add('text-gray-400')
-      el.classList.add('line-through')
-    } else {
-      el.classList.remove('text-gray-400')
-      el.classList.remove('line-through')
-    }
-  }, [item.id, item.completed])
-
-  React.useEffect(() => {
-    const el = document.getElementById(`body-${item.id}`) as HTMLDivElement
-    if (item.body) el.classList.remove('sr-only')
-    else el.classList.add('sr-only')
-  }, [item.id, item.body])
-
   return (
     <div className='relative flex-1'>
       <FrozenDiv
-        dangerouslySetInnerHTML={{ __html: item.title }}
+        value={item.title}
         contentEditable
         id={`item-${item.id}`}
         onKeyDownRef={onKeyDownRef}
@@ -740,7 +789,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
         </Link>
       )}
       <FrozenDiv
-        dangerouslySetInnerHTML={{ __html: item.body }}
+        value={item.body}
         contentEditable
         id={`body-${item.id}`}
         onKeyDownRef={onBodyKeyDownRef}
@@ -762,12 +811,22 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
 type DivProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>
 type FrozenDivProps = DivProps & { onKeyDownRef: React.MutableRefObject<HandleKeyDown | undefined> }
 
-const FrozenDiv = React.memo(
-  function FrozenDiv ({ onKeyDownRef, ...props }: FrozenDivProps) {
-    return <div {...props} onKeyDown={e => onKeyDownRef.current?.(e)} />
-  },
-  () => true
-)
+function FrozenDiv ({ onKeyDownRef, value, ...props }: FrozenDivProps) {
+  const valueRef = React.useRef(global.FIRST_RENDER ? { __html: value } : undefined)
+  const ref = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (document.activeElement == ref.current) return
+    ref.current.innerHTML = value
+  }, [value])
+  return (
+    <div
+      dangerouslySetInnerHTML={valueRef.current}
+      ref={ref}
+      {...props}
+      onKeyDown={e => onKeyDownRef.current?.(e)}
+    />
+  )
+}
 
 function getNextItem (item: ItemIsh, items: ItemMap, root = false): ItemIsh | null {
   if (root && item.children.length && !item.collapsed) return item.children[0]
