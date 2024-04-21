@@ -2,7 +2,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
 import { json, redirect } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
-import styles from 'easymde/dist/easymde.min.css'
+import styles from 'easymde/dist/easymde.min.css?url'
 
 import { ClientOnly } from '~/components/client-only'
 import * as Icons from '~/components/icons'

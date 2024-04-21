@@ -1,1 +1,3 @@
-export * from 'react-simplemde-editor'
+import * as md from 'react-simplemde-editor'
+
+export const SimpleMdeReact = md.SimpleMdeReact
