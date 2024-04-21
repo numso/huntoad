@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import { io } from 'socket.io-client'
 
+import * as settings from './settings.server'
 import type { Item } from './types'
 
 const g = global as any
@@ -17,19 +18,28 @@ export async function init (url: string, db: any, fs: any) {
   return new Promise(resolve => {
     g.socket?.disconnect()
     const timeout = setTimeout(() => resolve(false), 3000)
-    g.socket = io(url)
+    g.socket = io(url, {
+      query: {
+        name: settings.get('name'),
+        color: settings.get('color')
+      }
+    })
     g.socket.on('connect', () => {
       clearTimeout(timeout)
       resolve(true)
       g.db = db
       g.fs = fs
       g.url = url
+      setupPresence()
       setup()
     })
     g.socket.on('connect_error', () => {
       clearTimeout(timeout)
       resolve(false)
       g.socket.disconnect()
+    })
+    g.socket.on('disconnect', () => {
+      g.url = ''
     })
   })
 }
@@ -202,4 +212,38 @@ async function rm (share, id) {
 
 async function writeFile (share, id, contents) {
   g.socket.emit('update', { id: share, type: 'WRITEFILE', data: { id, contents } })
+}
+
+async function setupPresence () {
+  let data = {}
+  g.socket.on('presence', async users => {
+    data = users
+    g.io.emit('presence', data)
+  })
+  g.socket.on('user:join', async user => {
+    data[user.id] = user
+    g.io.emit('presence', data)
+  })
+  g.socket.on('user:update', async user => {
+    data[user.id] = user
+    g.io.emit('presence', data)
+  })
+  g.socket.on('user:leave', async id => {
+    delete data[id]
+    g.io.emit('presence', data)
+  })
+  g.io.on('connection', socket => {
+    socket.on('presence', () => {
+      socket.emit('presence', data)
+    })
+    socket.on('focus', id => {
+      g.socket.emit('user:focus', id)
+    })
+  })
+}
+
+export function updateUser (key, value) {
+  if (!connected()) return
+  if (key === 'name') g.socket.emit('user:update', { name: value })
+  if (key === 'color') g.socket.emit('user:update', { color: value })
 }

@@ -8,7 +8,6 @@ import {
   useFetcher,
   useFetchers,
   useLoaderData,
-  useRevalidator,
   useSearchParams
 } from '@remix-run/react'
 import cx from 'clsx'
@@ -18,8 +17,10 @@ import * as uuid from 'uuid'
 import { DndContext, useDragger } from '~/components/dnd'
 import { FocusManager, useFocuser } from '~/components/focus-manager'
 import * as Icons from '~/components/icons'
+import { Presence, PresenceUser } from '~/components/presence'
 import { useShortcut } from '~/components/shortcuts'
 import { useToast } from '~/components/toasts'
+import { useMultiplayer } from '~/components/use-multiplayer'
 import * as db from '~/utils/db.server'
 import * as listActions from '~/utils/list-actions'
 import * as settings from '~/utils/settings.server'
@@ -282,13 +283,8 @@ export default function Index () {
     connected
   } = useLoaderData<typeof loader>()
   const fetcher = useFetcher<SterisData>()
-  const revalidator = useRevalidator()
   const actionData = useActionData<SharePath>()
-  React.useEffect(() => {
-    window.socket.on('refresh', () => {
-      revalidator.revalidate()
-    })
-  }, [])
+  const [presence, mpFocused, mpFocus] = useMultiplayer()
 
   const fetchers = useFetchers()
   const addToast = useToast()
@@ -435,6 +431,7 @@ export default function Index () {
               )}
             </ul>
             <div className='flex-1' />
+            <Presence presence={presence} />
             <div className='relative rounded-md shadow-sm'>
               <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
                 <Icons.MagnifyingGlass className='h-4 w-4 text-gray-400' />
@@ -457,6 +454,7 @@ export default function Index () {
 
           <div className='-ml-10'>
             <List
+              mp={{ focused: mpFocused, focus: mpFocus }}
               connected={connected}
               items={items}
               allItems={allItems}
@@ -480,7 +478,7 @@ interface ListProps {
   search: string
 }
 
-function List ({ connected, items, root, rootId, allItems, search }: ListProps) {
+function List ({ connected, items, root, rootId, allItems, search, mp }: ListProps) {
   const { focusAfterMount } = useFocuser('--')
   const newId = uuid.v4()
   return (
@@ -488,6 +486,7 @@ function List ({ connected, items, root, rootId, allItems, search }: ListProps) 
       {items.map((item, i) => (
         <ListItem
           key={item.id}
+          mp={mp}
           item={item}
           i={i}
           allItems={allItems}
@@ -524,7 +523,7 @@ interface ListItemProps {
   allItems: ItemMap
   search: string
 }
-function ListItem ({ connected, item, i, allItems, search }: ListItemProps) {
+function ListItem ({ connected, item, i, allItems, search, mp }: ListItemProps) {
   const { startDrag, dragItem } = useDragger<Item>()
   return (
     <li
@@ -598,10 +597,16 @@ function ListItem ({ connected, item, i, allItems, search }: ListItemProps) {
         >
           <div className='h-2 w-2 rounded-full bg-gray-800 dark:bg-white' />
         </a>
-        <SuperInput item={item} i={i} allItems={allItems} />
+        <SuperInput item={item} i={i} allItems={allItems} mp={mp} />
       </div>
       {!item.collapsed && (
-        <List items={item.children} allItems={allItems} search={search} connected={connected} />
+        <List
+          items={item.children}
+          allItems={allItems}
+          search={search}
+          connected={connected}
+          mp={mp}
+        />
       )}
     </li>
   )
@@ -615,7 +620,7 @@ interface SuperInputProps {
 
 type HandleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => void
 
-function SuperInput ({ item, i, allItems }: SuperInputProps) {
+function SuperInput ({ item, i, allItems, mp }: SuperInputProps) {
   const onKeyDownRef = React.useRef<HandleKeyDown>()
   const onBodyKeyDownRef = React.useRef<HandleKeyDown>()
   const fetcher = useFetcher()
@@ -765,9 +770,20 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
     }
   }
 
+  const hasMpFocus = !!mp.focused[item.id]
   return (
     <div className='relative flex-1'>
+      {hasMpFocus && (
+        <div className='absolute -left-6'>
+          <div className='absolute right-0 flex items-center gap-2'>
+            {mp.focused[item.id].map(user => (
+              <PresenceUser key={user.id} user={user} small />
+            ))}
+          </div>
+        </div>
+      )}
       <FrozenDiv
+        onFocus={() => mp.focus(item.id)}
         value={item.title}
         contentEditable
         id={`item-${item.id}`}
@@ -778,8 +794,10 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
             { method: 'post' }
           )
         }}
+        style={hasMpFocus ? { background: mp.focused[item.id][0].color } : {}}
         className={cx('bg-transparent py-1 outline-none [overflow-wrap:anywhere]', {
-          'text-gray-400 line-through': item.completed
+          'text-gray-400 line-through': item.completed,
+          'px-3': hasMpFocus
         })}
       />
       {item.body && (
@@ -791,6 +809,7 @@ function SuperInput ({ item, i, allItems }: SuperInputProps) {
         </Link>
       )}
       <FrozenDiv
+        onFocus={() => mp.focus(item.id)}
         value={item.body}
         contentEditable
         id={`body-${item.id}`}

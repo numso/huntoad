@@ -7,6 +7,7 @@ import React from 'react'
 import { DndContext, useDragger } from '~/components/dnd'
 import { FavoriteLink } from '~/components/favorite'
 import * as Icons from '~/components/icons'
+import { PresenceUser } from '~/components/presence'
 import * as db from '~/utils/db.server'
 import type { Favorite } from '~/utils/settings.server'
 import * as settings from '~/utils/settings.server'
@@ -36,6 +37,7 @@ export async function action ({ request }: ActionFunctionArgs) {
         case 'name':
         case 'color':
           settings.update(key, value)
+          sync.updateUser(key, value)
           break
         default: {
           throw new Error('unknown setting key')
@@ -120,6 +122,13 @@ export default function Settings () {
           <Icons.XMark className='w-4 h-4 text-red-500' />
         )}
       </Input>
+      <label>Multiplayer Previews</label>
+      <div className='flex items-center gap-10'>
+        <PresenceUser user={{ name: data.name, color: data.color, focus: '1' }} />
+        <PresenceUser user={{ name: data.name, color: data.color }} />
+        <PresenceUser user={{ name: data.name, color: data.color, focus: '1' }} small />
+        <PresenceUser user={{ name: data.name, color: data.color }} small />
+      </div>
       <Input
         id='name'
         label='Name'
