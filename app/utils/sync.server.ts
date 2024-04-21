@@ -49,10 +49,9 @@ export async function share (id: string, data) {
 
 export async function join (id: string, secret: string) {
   return new Promise((resolve, reject) => {
-    g.socket.emit('join', { id, secret, version: -1 }, async status => {
+    g.socket.emit('join', { id, secret, version: -1 }, async (status, records) => {
       if (status === 'ok') {
-        const allItems = await g.db.loadItems()
-        g.__shares__[id] = gatherShareIds(allItems, id)
+        const allItems = await doJoin(id, records)
         const item = allItems.find(i => i.id == id)
         delete item.parentId
         item.order = allItems.filter(i => !i.parentId).length
@@ -60,7 +59,7 @@ export async function join (id: string, secret: string) {
         item.share_type = 'join'
         const [_, contents] = g.db.encode(item)
         g.fs.writeFile(id, contents, true)
-        resolve(secret)
+        resolve(null)
       } else reject(status)
     })
   })
@@ -70,41 +69,75 @@ async function setup () {
   const allItems = await g.db.loadItems()
   const sharedItems = allItems.filter(item => item.share)
   for (const item of sharedItems) {
-    g.socket.emit('join', { id: item.id, secret: item.share }, status => {
-      if (status === 'ok') console.log(`Joined share: ${item.id}`)
-      else console.error(`failed to join share: ${item.id}, reason: ${status}`)
+    g.socket.emit('join', { id: item.id, secret: item.share }, async (status, records) => {
+      if (status === 'ok') {
+        await doJoin(item.id, records)
+        console.log(`Joined share: ${item.id}`)
+        g.io.emit('refresh')
+        setTimeout(() => {
+          // this timeout won't be needed once we call setup on server start
+          g.io.emit('refresh')
+        }, 1000)
+      } else {
+        console.error(`failed to join share: ${item.id}, reason: ${status}`)
+      }
     })
-    g.__shares__[item.id] = gatherShareIds(allItems, item.id)
   }
-
   g.socket.on('update', async ({ id, type, data }) => {
-    switch (type) {
-      case 'WRITEFILE': {
-        if (data.id === id) {
-          savePartial(data.id, data.contents, [
-            'order',
-            'share',
-            'share_type',
-            'parentId',
-            'collapsed'
-          ])
-        } else {
-          savePartial(data.id, data.contents, ['collapsed'])
-        }
-        break
-      }
-      case 'RM': {
-        g.fs.rm(data.id, true)
-        break
-      }
-      default: {
-        console.error({ id, type, data })
-        throw new Error(`UNKNOWN STATE: ${type}`)
-      }
-    }
-
+    await doUpdate(id, type, data)
     g.io.emit('refresh')
   })
+}
+
+async function doJoin (id, records) {
+  for (const row of Object.values(records)) {
+    if (row.deleted) continue
+    await doUpdate(id, 'WRITEFILE', row)
+  }
+  const allItems = await g.db.loadItems()
+  g.__shares__[id] = gatherShareIds(allItems, id)
+  for (const row of Object.values(records)) {
+    if (row.deleted && g.__shares__[id].includes(row.id)) {
+      await doUpdate(id, 'RM', row)
+      g.__shares__[id] = g.__shares__[id].filter(i => i !== row.id)
+    }
+  }
+  const serverIds = Object.keys(records)
+  for (const itemId of g.__shares__[id]) {
+    if (!serverIds.includes(itemId)) {
+      const item = allItems.find(i => i.id == itemId)
+      const [_, contents] = g.db.encode(item)
+      writeFile(id, itemId, contents)
+    }
+  }
+  return allItems
+}
+
+async function doUpdate (id, type, data) {
+  switch (type) {
+    case 'WRITEFILE': {
+      if (data.id === id) {
+        await savePartial(data.id, data.contents, [
+          'order',
+          'share',
+          'share_type',
+          'parentId',
+          'collapsed'
+        ])
+      } else {
+        await savePartial(data.id, data.contents, ['collapsed'])
+      }
+      break
+    }
+    case 'RM': {
+      await g.fs.rm(data.id, true)
+      break
+    }
+    default: {
+      console.error({ id, type, data })
+      throw new Error(`UNKNOWN STATE: ${type}`)
+    }
+  }
 }
 
 async function savePartial (id, contents, omitList) {
@@ -115,7 +148,7 @@ async function savePartial (id, contents, omitList) {
     existingItem[key] = newItem[key]
   }
   const [_, contents2] = g.db.encode(existingItem)
-  g.fs.writeFile(id, contents2, true)
+  return g.fs.writeFile(id, contents2, true)
 }
 
 function flattenItems (item: Item): Item[] {
