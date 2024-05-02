@@ -2,14 +2,13 @@ import type { Config } from 'tailwindcss'
 
 export default {
   darkMode: 'class',
-  content: ["./app/**/*.{js,jsx,ts,tsx}"],
+  content: ['./app/**/*.{js,jsx,ts,tsx}'],
   theme: {
-    extend: {},
+    extend: {}
   },
   plugins: [
     // ...
     require('@tailwindcss/forms'),
-  ],
-
+    require('@tailwindcss/typography')
+  ]
 } satisfies Config
-

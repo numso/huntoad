@@ -375,7 +375,7 @@ export default function Index () {
                   <li>
                     <a
                       className={cx(
-                        'hover:text-blue-500 px-2 py-0.5 rounded flex items-center gap-2  ',
+                        'flex items-center gap-2 rounded px-2 py-0.5 hover:text-blue-500  ',
                         {
                           'text-gray-400': !crumb.title || crumb.completed,
                           'italic ': !crumb.title,
@@ -385,7 +385,7 @@ export default function Index () {
                       )}
                       href={`/list?id=${crumb.id}`}
                     >
-                      {!!crumb.share && <Icons.Share className='w-3 h-3' />}
+                      {!!crumb.share && <Icons.Share className='h-3 w-3' />}
                       {crumb.title || 'unnamed'}
                     </a>
                   </li>
@@ -427,6 +427,17 @@ export default function Index () {
                       })}
                     />
                   </button>
+                </li>
+              )}
+              {!!items[0] && (
+                <li>
+                  <a
+                    className='block rounded-full p-2 opacity-0 transition-all hover:bg-blue-200 group-hover:opacity-100'
+                    target='_blank'
+                    href={`/slides?id=${items[0].id}`}
+                  >
+                    <Icons.PresentationChartBar className='h-4 w-4' />
+                  </a>
                 </li>
               )}
             </ul>
@@ -808,7 +819,7 @@ function SuperInput ({ item, i, allItems, mp }: SuperInputProps) {
           <Icons.ArrowUpLeft className='h-2 w-2 stroke-blue-500' />
         </Link>
       )}
-      <FrozenDiv
+      <FrozenDiv2
         onFocus={() => mp.focus(item.id)}
         value={item.body}
         contentEditable
@@ -842,6 +853,23 @@ function FrozenDiv ({ onKeyDownRef, value, ...props }: FrozenDivProps) {
   return (
     <div
       dangerouslySetInnerHTML={valueRef.current}
+      ref={ref}
+      {...props}
+      onKeyDown={e => onKeyDownRef.current?.(e)}
+    />
+  )
+}
+
+function FrozenDiv2 ({ onKeyDownRef, value, ...props }: FrozenDivProps) {
+  const valueRef = React.useRef(value)
+  const ref = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (document.activeElement == ref.current) return
+    ref.current.innerText = value
+  }, [value])
+  return (
+    <div
+      children={valueRef.current}
       ref={ref}
       {...props}
       onKeyDown={e => onKeyDownRef.current?.(e)}
