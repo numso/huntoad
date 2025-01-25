@@ -68,7 +68,7 @@ export default function Calendar () {
   const days = [...new Array(lastDate.getDate())].map((_, i) => i + 1)
   return (
     <div className='min-h-screen bg-gray-100 dark:bg-gray-900'>
-      <h1 className='group flex items-center bg-white dark:bg-gray-700 p-4 text-2xl'>
+      <h1 className='group flex items-center bg-white p-4 text-2xl dark:bg-gray-700'>
         <Link to='/' className='mr-8 hover:text-blue-500'>
           <Icons.HomeModern className='h-8 w-8' />
         </Link>
@@ -114,6 +114,7 @@ export default function Calendar () {
             <Day
               key={i}
               month={month}
+              monthNum={monthNum}
               date={i}
               year={year}
               weekAnchor={(offset + i + 6) % 7 === 0 ? (offset + i + 6) / 7 : null}
@@ -131,6 +132,7 @@ export default function Calendar () {
 
 interface DayProps {
   month: string
+  monthNum: number
   date: number
   year: number
   items: Item[]
@@ -138,11 +140,16 @@ interface DayProps {
   weekNum: number
 }
 
-function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
-  const day = new Date().getDate()
+function Day ({ month, monthNum, date, year, items, weekAnchor, weekNum }: DayProps) {
+  const today = new Date()
   return (
     <div
-      className={cx('relative aspect-square transition-all dark:bg-gray-900 dark:hover:bg-blue-100 hover:bg-yellow-50', day === date ? 'bg-yellow-100 dark:bg-blue-300' : 'bg-white')}
+      className={cx(
+        'relative aspect-square transition-all hover:bg-yellow-50 dark:bg-gray-900 dark:hover:bg-blue-100',
+        today.getDate() === date && today.getMonth() === monthNum && today.getFullYear() === year
+          ? 'bg-yellow-100 dark:bg-blue-300'
+          : 'bg-white'
+      )}
       data-week-anchor={weekAnchor}
       data-week-num={weekNum}
     >
@@ -171,7 +178,7 @@ function Day ({ month, date, year, items, weekAnchor, weekNum }: DayProps) {
                 'hidden lg:block': i === 4 || i === 5,
                 'hidden min-[900px]:block': i === 3,
                 'hidden md:block': i === 2,
-                'block ': i === 0 || i === 1
+                block: i === 0 || i === 1
               }
             )}
             title={title}
