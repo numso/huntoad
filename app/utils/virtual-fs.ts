@@ -3,7 +3,8 @@ import pathmodule from 'node:path'
 
 import debounceMany from './debounce-many'
 import * as settings from './settings.server'
-import * as sync from './sync.server'
+
+// import * as sync from './sync.server'
 
 interface Global {
   __huntoad__: {
@@ -45,7 +46,7 @@ export async function writeFile (id: string, contents: string, syncServer: boole
   }
   files[path] = contents
 
-  await sync.sync(id, syncServer)
+  // await sync.sync(id, syncServer)
   if (syncServer) {
     fs.writeFile(path, contents)
   } else {
@@ -65,7 +66,7 @@ export async function rm (id: string, syncServer: boolean = false) {
   }
   delete files[path]
   clearCache(path)
-  await sync.sync(id, syncServer)
+  // await sync.sync(id, syncServer)
   // because we debounce writes, we might be deleting an item that was never persisted to disk
   return fs.rm(path).catch(() => null)
 }
