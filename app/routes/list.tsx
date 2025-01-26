@@ -657,7 +657,7 @@ function SuperInput ({ item, i, allItems, mp }: SuperInputProps) {
     }
 
     // mark item as complete / not complete
-    if (e.metaKey && e.key === 'Enter') {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault()
       return fetcher.submit(
         { _action: 'setCompleted', id: item.id, completed: !item.completed },
@@ -747,7 +747,7 @@ function SuperInput ({ item, i, allItems, mp }: SuperInputProps) {
     const { anchorOffset: startPos } = selection
 
     // mark item as complete / not complete
-    if (e.metaKey && e.key === 'Enter') {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault()
       return fetcher.submit(
         { _action: 'setCompleted', id: item.id, completed: !item.completed },
