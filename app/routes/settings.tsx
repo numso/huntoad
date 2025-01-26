@@ -115,11 +115,11 @@ export default function Settings () {
         }
       >
         {testingServer ? (
-          <Icons.ArrowPath className='w-4 h-4 text-yellow-500 animate-spin' />
+          <Icons.ArrowPath className='h-4 w-4 animate-spin text-yellow-500' />
         ) : data.shareConnected ? (
-          <Icons.Check className='w-4 h-4 text-green-500' />
+          <Icons.Check className='h-4 w-4 text-green-500' />
         ) : (
-          <Icons.XMark className='w-4 h-4 text-red-500' />
+          <Icons.XMark className='h-4 w-4 text-red-500' />
         )}
       </Input>
       <label>Multiplayer Previews</label>

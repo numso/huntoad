@@ -63,7 +63,7 @@ export default function Index () {
       <h1
         className={cx('group flex items-center bg-gray-100 p-4 text-2xl dark:bg-gray-900', {
           'text-gray-500': !item.title || item.completed,
-          'italic ': !item.title,
+          italic: !item.title,
           'line-through': item.completed
         })}
       >

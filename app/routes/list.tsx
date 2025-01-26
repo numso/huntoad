@@ -375,10 +375,10 @@ export default function Index () {
                   <li>
                     <a
                       className={cx(
-                        'flex items-center gap-2 rounded px-2 py-0.5 hover:text-blue-500  ',
+                        'flex items-center gap-2 rounded px-2 py-0.5 hover:text-blue-500',
                         {
                           'text-gray-400': !crumb.title || crumb.completed,
-                          'italic ': !crumb.title,
+                          italic: !crumb.title,
                           'line-through': crumb.completed,
                           'bg-blue-200': !!crumb.share
                         }
@@ -542,7 +542,7 @@ function ListItem ({ connected, item, i, allItems, search, mp }: ListItemProps) 
       data-dragging={item === dragItem}
       className={cx('ml-[-52px] transition-all', {
         'bg-gray-200 dark:bg-gray-600': item === dragItem,
-        'hidden ': item.deleted
+        hidden: item.deleted
       })}
     >
       <div className='group flex gap-2'>
@@ -581,7 +581,7 @@ function ListItem ({ connected, item, i, allItems, search, mp }: ListItemProps) 
           <input type='hidden' name='collapsed' value={'' + !item.collapsed} />
           <button
             type='submit'
-            className='mt-1.5 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100  dark:hover:bg-gray-600'
+            className='mt-1.5 flex h-5 w-5 items-center justify-center rounded-full opacity-0 hover:bg-gray-100 group-hover:opacity-100 dark:hover:bg-gray-600'
           >
             <Icons.ChevronRight
               className={cx('h-3 w-3 transition-all', {

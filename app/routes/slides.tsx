@@ -96,7 +96,7 @@ export default function Index () {
                 <a
                   className={cx('flex items-center gap-2 rounded px-2 py-0.5 hover:bg-blue-100', {
                     'text-gray-400': !crumb.title || crumb.completed,
-                    'italic ': !crumb.title,
+                    italic: !crumb.title,
                     'line-through': crumb.completed,
                     'text-blue-500': crumb.id === id
                   })}
@@ -143,7 +143,7 @@ interface ListItemProps {
 
 function ListItem ({ item }: ListItemProps) {
   return (
-    <li key={item.id} className={cx({ 'hidden ': item.deleted })}>
+    <li key={item.id} className={cx({ hidden: item.deleted })}>
       <div className='group flex gap-2'>
         <div className='mt-1.5 flex h-5 w-5 items-center justify-center rounded-full'>
           <div className='h-2 w-2 rounded-full bg-gray-800 dark:bg-white' />
