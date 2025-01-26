@@ -1,8 +1,18 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
-import { json, redirect } from '@remix-run/node'
+import {
+  json,
+  redirect,
+  unstable_composeUploadHandlers,
+  unstable_createMemoryUploadHandler,
+  unstable_parseMultipartFormData
+} from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import cx from 'clsx'
 import styles from 'easymde/dist/easymde.min.css?url'
+import fs from 'fs/promises'
+import path from 'path'
+import React from 'react'
+import * as uuid from 'uuid'
 
 import { ClientOnly } from '~/components/client-only'
 import * as Icons from '~/components/icons'
@@ -22,9 +32,26 @@ export async function loader ({ params }: LoaderFunctionArgs) {
 }
 
 export async function action ({ request, params }: ActionFunctionArgs) {
-  const form = await request.formData()
+  let form
+
+  if (request.headers.get('Content-Type')?.startsWith('multipart/form-data')) {
+    const uploadHandler = unstable_composeUploadHandlers(async ({ name, data, filename }) => {
+      if (name !== 'file') return undefined
+      const uploaddir = path.join(settings.get('datadir') as string, 'uploads')
+      const newName = uuid.v4() + path.extname(filename as string)
+      const filepath = path.join(uploaddir, newName)
+      await fs.writeFile(filepath, data)
+      return `/uploads/${newName}`
+    }, unstable_createMemoryUploadHandler())
+    form = await unstable_parseMultipartFormData(request, uploadHandler)
+  } else {
+    form = await request.formData()
+  }
 
   switch (form.get('_action')) {
+    case 'uploadImage': {
+      return { imageUrl: form.get('file') }
+    }
     case 'updateBody': {
       const id = form.get('id')
       const body = form.get('body')
@@ -43,21 +70,42 @@ export async function action ({ request, params }: ActionFunctionArgs) {
   return null
 }
 
-const options = {
-  toolbar: false,
-  status: false,
-  placeholder: 'Your note goes here...',
-  spellChecker: false,
-  autoDownloadFontAwesome: false,
-  autofocus: true,
-  unorderedListStyle: '-',
-  indentWithTabs: false
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+async function waitFor (check: Function, delay: number) {
+  while (!check()) await sleep(delay)
+  return check()
 }
 
 export default function Index () {
   const { item, favorited } = useLoaderData<typeof loader>()
   const fetcher = useFetcher()
-
+  const fetcherRef = React.useRef()
+  fetcherRef.current = fetcher.data
+  const options = React.useMemo(
+    () => ({
+      toolbar: false,
+      uploadImage: true,
+      previewImagesInEditor: true,
+      imageUploadFunction: async (file: File, onSuccess, onError) => {
+        const data = new FormData()
+        data.append('_action', 'uploadImage')
+        data.append('file', file)
+        await fetcher.submit(data, { method: 'post', encType: 'multipart/form-data' })
+        const url = await waitFor(() => fetcherRef.current?.imageUrl, 10)
+        console.log({ url })
+        onSuccess(url)
+      },
+      status: false,
+      placeholder: 'Your note goes here...',
+      spellChecker: false,
+      autoDownloadFontAwesome: false,
+      autofocus: true,
+      unorderedListStyle: '-',
+      indentWithTabs: false
+    }),
+    []
+  )
   return (
     <div>
       <h1

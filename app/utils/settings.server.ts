@@ -1,4 +1,5 @@
 import Conf from 'conf'
+import path from 'path'
 
 import type { Item } from './types'
 
@@ -6,7 +7,7 @@ const config = new Conf({
   projectName: process.env.PROJECT_NAME || 'huntoad',
   defaults: {
     darkmode: false,
-    datadir: process.cwd() + '/data',
+    datadir: path.join(process.cwd(), 'data'),
     shareserver: '',
     favorites: [],
     name: 'Toad Hunter ' + `${Math.floor(Math.random() * 9999)}`.padStart(4, '0'),

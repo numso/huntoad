@@ -20,14 +20,14 @@ function getCache () {
 }
 
 export async function readdir (_path: string, encoding: 'utf-8') {
-  const path = settings.get('datadir') as string
+  const path = pathmodule.join(settings.get('datadir') as string, 'notes')
   const { directories } = getCache()
   if (!directories[path]) directories[path] = await fs.readdir(path, encoding)
   return directories[path]
 }
 
 export async function readFile (id: string, encoding: 'utf-8') {
-  const datadir = settings.get('datadir') as string
+  const datadir = pathmodule.join(settings.get('datadir') as string, 'notes')
   const path = pathmodule.join(datadir, `${id}.md`)
   const { files } = getCache()
   if (!files[path]) files[path] = await fs.readFile(path, encoding)
@@ -37,7 +37,7 @@ export async function readFile (id: string, encoding: 'utf-8') {
 const { fn: debouncedWriteFile, clear: clearCache } = debounceMany(fs.writeFile, 1_000)
 
 export async function writeFile (id: string, contents: string, syncServer: boolean = false) {
-  const datadir = settings.get('datadir') as string
+  const datadir = pathmodule.join(settings.get('datadir') as string, 'notes')
   const path = pathmodule.join(datadir, `${id}.md`)
   const { directories, files } = getCache()
   const directory = directories[pathmodule.dirname(path)]
@@ -56,7 +56,7 @@ export async function writeFile (id: string, contents: string, syncServer: boole
 }
 
 export async function rm (id: string, syncServer: boolean = false) {
-  const datadir = settings.get('datadir') as string
+  const datadir = pathmodule.join(settings.get('datadir') as string, 'notes')
   const path = pathmodule.join(datadir, `${id}.md`)
   const { directories, files } = getCache()
   const directory = directories[pathmodule.dirname(path)]
